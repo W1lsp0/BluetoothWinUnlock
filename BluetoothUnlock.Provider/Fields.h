@@ -1,0 +1,21 @@
+#pragma once
+
+#include "Common.h"
+
+enum FIELD_ID
+{
+    FID_TILE_IMAGE = 0,
+    FID_LARGE_TEXT,
+    FID_STATUS_TEXT,
+    FID_SUBMIT_BUTTON,
+    FID_NUM_FIELDS
+};
+
+struct FIELD_STATE_PAIR
+{
+    CREDENTIAL_PROVIDER_FIELD_STATE cpfs;
+    CREDENTIAL_PROVIDER_FIELD_INTERACTIVE_STATE cpfis;
+};
+
+extern const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR g_fieldDescriptors[FID_NUM_FIELDS];
+extern const FIELD_STATE_PAIR g_fieldStatePairs[FID_NUM_FIELDS];

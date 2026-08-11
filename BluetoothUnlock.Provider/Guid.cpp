@@ -1,0 +1,6 @@
+#include "Guid.h"
+#include <initguid.h>
+
+// {8AA16CC0-1E39-473D-B8C7-8C3F7A4D6D62}
+DEFINE_GUID(CLSID_BluetoothUnlockProvider,
+    0x8aa16cc0, 0x1e39, 0x473d, 0xb8, 0xc7, 0x8c, 0x3f, 0x7a, 0x4d, 0x6d, 0x62);

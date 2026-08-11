@@ -1,0 +1,42 @@
+name: Windows Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build x64 Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build
+        run: msbuild BluetoothUnlock.sln /m /p:Configuration=Release /p:Platform=x64
+
+      - name: Stage artifacts
+        shell: pwsh
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP "BluetoothWinUnlock"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item -Recurse -Force scripts (Join-Path $stage "scripts")
+          Copy-Item -Force x64\Release\BluetoothUnlock.Provider.dll $stage
+          Copy-Item -Force BluetoothUnlock.Service\bin\Release\BluetoothUnlock.Service.exe $stage
+          Copy-Item -Force BluetoothUnlock.Service\bin\Release\BluetoothUnlock.Shared.dll $stage
+          Copy-Item -Force BluetoothUnlock.Config\bin\Release\BluetoothUnlock.Config.exe $stage
+          Copy-Item -Force BluetoothUnlock.Config\bin\Release\BluetoothUnlock.Shared.dll (Join-Path $stage "BluetoothUnlock.Shared.Config.dll")
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: BluetoothWinUnlock-Windows-x64-Release
+          path: ${{ runner.temp }}\BluetoothWinUnlock
+

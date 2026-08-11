@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>BluetoothUnlock.Config</RootNamespace>
+    <AssemblyName>BluetoothUnlock.Config</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BluetoothUnlock.Shared\BluetoothUnlock.Shared.csproj" />
+  </ItemGroup>
+</Project>
