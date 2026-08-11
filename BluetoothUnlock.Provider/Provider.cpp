@@ -1,19 +1,27 @@
 #include "Provider.h"
 #include "Fields.h"
 #include "Helpers.h"
+#include "IpcClient.h"
 #include <new>
 
 BluetoothUnlockProvider::BluetoothUnlockProvider() :
     _refCount(1),
     _scenario(CPUS_INVALID),
     _users(nullptr),
-    _credential(nullptr)
+    _credential(nullptr),
+    _events(nullptr),
+    _adviseContext(0),
+    _stopPollEvent(nullptr),
+    _pollThread(nullptr),
+    _lastAutoSubmitReady(false)
 {
     DllAddRef();
 }
 
 BluetoothUnlockProvider::~BluetoothUnlockProvider()
 {
+    StopAutoSubmitPolling();
+    SafeRelease(&_events);
     SafeRelease(&_users);
     SafeRelease(&_credential);
     DllRelease();
@@ -77,14 +85,32 @@ IFACEMETHODIMP BluetoothUnlockProvider::SetSerialization(const CREDENTIAL_PROVID
     return E_NOTIMPL;
 }
 
-IFACEMETHODIMP BluetoothUnlockProvider::Advise(ICredentialProviderEvents *, UINT_PTR)
+IFACEMETHODIMP BluetoothUnlockProvider::Advise(ICredentialProviderEvents *events, UINT_PTR adviseContext)
 {
-    return E_NOTIMPL;
+    StopAutoSubmitPolling();
+    SafeRelease(&_events);
+    _adviseContext = adviseContext;
+    _lastAutoSubmitReady = false;
+
+    if (events)
+    {
+        HRESULT hr = events->QueryInterface(IID_PPV_ARGS(&_events));
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+    }
+
+    StartAutoSubmitPolling();
+    return S_OK;
 }
 
 IFACEMETHODIMP BluetoothUnlockProvider::UnAdvise()
 {
-    return E_NOTIMPL;
+    StopAutoSubmitPolling();
+    SafeRelease(&_events);
+    _adviseContext = 0;
+    return S_OK;
 }
 
 IFACEMETHODIMP BluetoothUnlockProvider::GetFieldDescriptorCount(DWORD *count)
@@ -113,6 +139,11 @@ IFACEMETHODIMP BluetoothUnlockProvider::GetCredentialCount(
     *count = SUCCEEDED(hr) ? 1 : 0;
     *defaultCredential = CREDENTIAL_PROVIDER_NO_DEFAULT;
     *autoLogonWithDefault = FALSE;
+    if (SUCCEEDED(hr) && _scenario == CPUS_UNLOCK_WORKSTATION && QueryAutoSubmitAllowed())
+    {
+        *defaultCredential = 0;
+        *autoLogonWithDefault = TRUE;
+    }
     return S_OK;
 }
 
@@ -182,4 +213,71 @@ HRESULT BluetoothUnlockProvider::EnsureCredential()
     }
 
     return hr;
+}
+
+void BluetoothUnlockProvider::StartAutoSubmitPolling()
+{
+    if (_pollThread || _scenario != CPUS_UNLOCK_WORKSTATION || !_events)
+    {
+        return;
+    }
+
+    _stopPollEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+    if (!_stopPollEvent)
+    {
+        return;
+    }
+
+    AddRef();
+    _pollThread = CreateThread(nullptr, 0, AutoSubmitPollThreadProc, this, 0, nullptr);
+    if (!_pollThread)
+    {
+        CloseHandle(_stopPollEvent);
+        _stopPollEvent = nullptr;
+        Release();
+    }
+}
+
+void BluetoothUnlockProvider::StopAutoSubmitPolling()
+{
+    if (_stopPollEvent)
+    {
+        SetEvent(_stopPollEvent);
+    }
+
+    if (_pollThread)
+    {
+        WaitForSingleObject(_pollThread, 3000);
+        CloseHandle(_pollThread);
+        _pollThread = nullptr;
+    }
+
+    if (_stopPollEvent)
+    {
+        CloseHandle(_stopPollEvent);
+        _stopPollEvent = nullptr;
+    }
+
+    _lastAutoSubmitReady = false;
+}
+
+DWORD BluetoothUnlockProvider::AutoSubmitPollLoop()
+{
+    while (WaitForSingleObject(_stopPollEvent, 1000) == WAIT_TIMEOUT)
+    {
+        const bool ready = QueryAutoSubmitAllowed();
+        if (ready && !_lastAutoSubmitReady && _events)
+        {
+            _events->CredentialsChanged(_adviseContext);
+        }
+        _lastAutoSubmitReady = ready;
+    }
+
+    Release();
+    return 0;
+}
+
+DWORD WINAPI BluetoothUnlockProvider::AutoSubmitPollThreadProc(LPVOID parameter)
+{
+    return static_cast<BluetoothUnlockProvider *>(parameter)->AutoSubmitPollLoop();
 }

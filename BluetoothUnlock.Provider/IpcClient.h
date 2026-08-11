@@ -12,3 +12,4 @@ struct ServiceCredential
 };
 
 ServiceCredential QueryServiceCredential();
+bool QueryAutoSubmitAllowed();

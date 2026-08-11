@@ -28,9 +28,18 @@ public:
 
 private:
     HRESULT EnsureCredential();
+    void StartAutoSubmitPolling();
+    void StopAutoSubmitPolling();
+    DWORD AutoSubmitPollLoop();
+    static DWORD WINAPI AutoSubmitPollThreadProc(LPVOID parameter);
 
     long _refCount;
     CREDENTIAL_PROVIDER_USAGE_SCENARIO _scenario;
     ICredentialProviderUserArray *_users;
     BluetoothUnlockCredential *_credential;
+    ICredentialProviderEvents *_events;
+    UINT_PTR _adviseContext;
+    HANDLE _stopPollEvent;
+    HANDLE _pollThread;
+    bool _lastAutoSubmitReady;
 };

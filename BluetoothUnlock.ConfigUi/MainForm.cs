@@ -15,6 +15,7 @@ namespace BluetoothUnlock.ConfigUi
         private readonly TextBox _domainTextBox = new TextBox();
         private readonly TextBox _usernameTextBox = new TextBox();
         private readonly TextBox _passwordTextBox = new TextBox();
+        private readonly CheckBox _autoSubmitCheckBox = new CheckBox();
         private readonly NumericUpDown _secondsInput = new NumericUpDown();
         private readonly TextBox _outputTextBox = new TextBox();
         private readonly Label _adminLabel = new Label();
@@ -43,7 +44,7 @@ namespace BluetoothUnlock.ConfigUi
             };
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 160));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 188));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 104));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -69,7 +70,7 @@ namespace BluetoothUnlock.ConfigUi
             {
                 Text = "Windows credential",
                 Dock = DockStyle.Top,
-                Height = 150,
+                Height = 178,
                 Padding = new Padding(12),
             };
             root.Controls.Add(credentialGroup, 0, 2);
@@ -78,7 +79,7 @@ namespace BluetoothUnlock.ConfigUi
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                RowCount = 4,
+                RowCount = 5,
             };
             credentialGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
             credentialGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -89,10 +90,15 @@ namespace BluetoothUnlock.ConfigUi
             _passwordTextBox.UseSystemPasswordChar = true;
             AddLabeledControl(credentialGrid, "Password", _passwordTextBox, 2);
 
+            _autoSubmitCheckBox.Text = "Auto submit Bluetooth Unlock when verified";
+            _autoSubmitCheckBox.AutoSize = true;
+            credentialGrid.Controls.Add(new Label(), 0, 3);
+            credentialGrid.Controls.Add(_autoSubmitCheckBox, 1, 3);
+
             var saveButton = new Button { Text = "Save credential", Dock = DockStyle.Left, Width = 140 };
             saveButton.Click += (sender, args) => SaveCredential();
-            credentialGrid.Controls.Add(new Label(), 0, 3);
-            credentialGrid.Controls.Add(saveButton, 1, 3);
+            credentialGrid.Controls.Add(new Label(), 0, 4);
+            credentialGrid.Controls.Add(saveButton, 1, 4);
 
             var actionPanel = new FlowLayoutPanel
             {
@@ -171,6 +177,7 @@ namespace BluetoothUnlock.ConfigUi
                 var config = ConfigStore.Load();
                 _domainTextBox.Text = string.IsNullOrWhiteSpace(config.Domain) ? "." : config.Domain;
                 _usernameTextBox.Text = config.Username ?? "";
+                _autoSubmitCheckBox.Checked = config.AutoSubmitOnVerified;
             }
             catch (Exception ex)
             {
@@ -188,7 +195,22 @@ namespace BluetoothUnlock.ConfigUi
                     return;
                 }
 
-                ConfigStore.SetCredential(_domainTextBox.Text, _usernameTextBox.Text, _passwordTextBox.Text);
+                var config = ConfigStore.Load();
+                if (!string.IsNullOrEmpty(_passwordTextBox.Text))
+                {
+                    ConfigStore.SetCredential(_domainTextBox.Text, _usernameTextBox.Text, _passwordTextBox.Text);
+                    config = ConfigStore.Load();
+                }
+                else if (!config.HasCredential)
+                {
+                    MessageBox.Show(this, "Password is required the first time you save a credential.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                config.Domain = string.IsNullOrWhiteSpace(_domainTextBox.Text) ? "." : _domainTextBox.Text;
+                config.Username = _usernameTextBox.Text;
+                config.AutoSubmitOnVerified = _autoSubmitCheckBox.Checked;
+                ConfigStore.Save(config);
                 _passwordTextBox.Clear();
                 AppendOutput("Credential saved to " + ConfigStore.ConfigPath);
                 RefreshStatus();

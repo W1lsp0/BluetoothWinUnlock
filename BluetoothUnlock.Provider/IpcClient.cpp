@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <wincrypt.h>
 #include <strsafe.h>
+#include <cstring>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -78,58 +79,59 @@ namespace
         StringCchPrintfW(buffer, ARRAYSIZE(buffer), L"pipe error 0x%08X", error);
         return buffer;
     }
+
+    bool SendPipeCommand(const char *request, DWORD waitMs, std::string &response, std::wstring &status)
+    {
+        if (!WaitNamedPipeW(kPipePath, waitMs))
+        {
+            status = ErrorText(GetLastError());
+            return false;
+        }
+
+        HANDLE pipe = CreateFileW(
+            kPipePath,
+            GENERIC_READ | GENERIC_WRITE,
+            0,
+            nullptr,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            nullptr);
+
+        if (pipe == INVALID_HANDLE_VALUE)
+        {
+            status = ErrorText(GetLastError());
+            return false;
+        }
+
+        DWORD written = 0;
+        if (!WriteFile(pipe, request, static_cast<DWORD>(strlen(request)), &written, nullptr))
+        {
+            status = ErrorText(GetLastError());
+            CloseHandle(pipe);
+            return false;
+        }
+
+        char buffer[512] = {};
+        DWORD read = 0;
+        while (ReadFile(pipe, buffer, sizeof(buffer), &read, nullptr) && read > 0)
+        {
+            response.append(buffer, buffer + read);
+            if (response.find("\nEND\n") != std::string::npos || response.size() > 8192)
+            {
+                break;
+            }
+        }
+        CloseHandle(pipe);
+        return !response.empty();
+    }
 }
 
 ServiceCredential QueryServiceCredential()
 {
     ServiceCredential result;
-
-    if (!WaitNamedPipeW(kPipePath, 3000))
-    {
-        result.status = ErrorText(GetLastError());
-        return result;
-    }
-
-    HANDLE pipe = CreateFileW(
-        kPipePath,
-        GENERIC_READ | GENERIC_WRITE,
-        0,
-        nullptr,
-        OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,
-        nullptr);
-
-    if (pipe == INVALID_HANDLE_VALUE)
-    {
-        result.status = ErrorText(GetLastError());
-        return result;
-    }
-
-    const char request[] = "GETCRED\n";
-    DWORD written = 0;
-    if (!WriteFile(pipe, request, static_cast<DWORD>(sizeof(request) - 1), &written, nullptr))
-    {
-        result.status = ErrorText(GetLastError());
-        CloseHandle(pipe);
-        return result;
-    }
-
     std::string response;
-    char buffer[512] = {};
-    DWORD read = 0;
-    while (ReadFile(pipe, buffer, sizeof(buffer), &read, nullptr) && read > 0)
+    if (!SendPipeCommand("GETCRED\n", 3000, response, result.status))
     {
-        response.append(buffer, buffer + read);
-        if (response.find("\nEND\n") != std::string::npos || response.size() > 8192)
-        {
-            break;
-        }
-    }
-    CloseHandle(pipe);
-
-    if (response.empty())
-    {
-        result.status = L"empty service response";
         return result;
     }
 
@@ -184,4 +186,19 @@ ServiceCredential QueryServiceCredential()
     }
 
     return result;
+}
+
+bool QueryAutoSubmitAllowed()
+{
+    std::string response;
+    std::wstring status;
+    if (!SendPipeCommand("CANUNLOCK\n", 250, response, status))
+    {
+        return false;
+    }
+
+    std::istringstream lines(response);
+    std::string line;
+    std::getline(lines, line);
+    return line == "OK";
 }

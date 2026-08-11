@@ -59,8 +59,9 @@ Username: 你的 Windows 用户名
 Password: 你的 Windows 登录密码，不是 Windows Hello PIN
 ```
 
-6. 点击 `Save credential`。
-7. 点击 `Refresh status`。
+6. 如需授权后不再手动点击锁屏 tile，勾选 `Auto submit Bluetooth Unlock when verified`。
+7. 点击 `Save credential`。
+8. 点击 `Refresh status`。
 
 状态区正常应看到类似：
 
@@ -68,6 +69,7 @@ Password: 你的 Windows 登录密码，不是 Windows Hello PIN
 OK
 hasCredential:1
 mode:ManualTtl
+autoSubmit:1
 verifiedUntilUtc:...
 verifiedNow:0
 END
@@ -88,8 +90,8 @@ Service pipe unavailable
 1. 设置 `Grant seconds`，例如 `60`。
 2. 点击 `Grant test unlock`。
 3. 锁屏。
-4. 在锁屏界面选择 `Bluetooth Unlock`。
-5. 点击 `Unlock`。
+4. 如果未启用自动提交，在锁屏界面选择 `Bluetooth Unlock` 并点击 `Unlock`。
+5. 如果已启用自动提交，且 `verifiedNow:1`，Windows 会尝试自动提交 `Bluetooth Unlock`。
 
 如果锁屏界面没有显示 `Bluetooth Unlock`，重启一次 Windows 后再试。
 
@@ -104,6 +106,7 @@ cd D:\BluetoothWinUnlock-Windows-x64-Release
 .\scripts\install-provider.ps1 -ProviderDll .\BluetoothUnlock.Provider.dll
 
 .\BluetoothUnlock.Config.exe set-credential --domain . --username W1lsp0 --password "你的Windows登录密码"
+.\BluetoothUnlock.Config.exe set-auto-submit --enabled true
 .\BluetoothUnlock.Config.exe status
 .\BluetoothUnlock.Config.exe grant --seconds 60
 ```
@@ -122,7 +125,7 @@ rundll32.exe user32.dll,LockWorkStation
 2. 开启 `自动解锁`。
 3. 点击开始监控。
 4. 锁屏后设备靠近时，WPF 会自动调用本地服务授权。
-5. 在锁屏界面点击 `Bluetooth Unlock` 完成解锁。
+5. 如果启用了自动提交，系统会尝试自动选择 `Bluetooth Unlock` 并解锁；否则需要在锁屏界面点击 `Bluetooth Unlock`。
 
 ## 卸载
 
@@ -158,6 +161,16 @@ C:\ProgramData\BluetoothUnlock\config.xml
 ### 锁屏界面没有 Bluetooth Unlock
 
 先确认 `Install provider` 没报错。如果仍然没有，重启 Windows。
+
+### 如何不点击 Bluetooth Unlock 自动解锁
+
+在 `BluetoothUnlock.ConfigUi.exe` 中勾选：
+
+```text
+Auto submit Bluetooth Unlock when verified
+```
+
+然后点击 `Save credential`。之后只要服务状态是 `verifiedNow:1`，Credential Provider 会请求 LogonUI 自动提交。不同 Windows 登录界面状态下，自动提交可能需要重新锁屏或等待 LogonUI 重新枚举凭据。
 
 ### 密码填什么
 

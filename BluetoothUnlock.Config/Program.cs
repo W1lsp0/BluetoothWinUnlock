@@ -28,6 +28,8 @@ namespace BluetoothUnlock.Config
                         return SetCredential(options);
                     case "set-mode":
                         return SetMode(options);
+                    case "set-auto-submit":
+                        return SetAutoSubmit(options);
                     case "grant":
                     case "bluetooth-verified":
                         return Grant(options);
@@ -73,6 +75,19 @@ namespace BluetoothUnlock.Config
             config.VerifierMode = mode;
             ConfigStore.Save(config);
             Console.WriteLine("Mode set to " + mode + ".");
+            return 0;
+        }
+
+        private static int SetAutoSubmit(Dictionary<string, string> options)
+        {
+            var enabledText = Require(options, "enabled");
+            if (!bool.TryParse(enabledText, out var enabled))
+            {
+                throw new ArgumentException("Invalid --enabled value. Use true or false.");
+            }
+
+            ConfigStore.SetAutoSubmit(enabled);
+            Console.WriteLine("Auto submit set to " + enabled + ".");
             return 0;
         }
 
@@ -189,6 +204,7 @@ namespace BluetoothUnlock.Config
             Console.WriteLine("  set-credential --domain . --username alice --password secret");
             Console.WriteLine("  set-mode --mode ManualTtl");
             Console.WriteLine("  set-mode --mode AlwaysAllowTest");
+            Console.WriteLine("  set-auto-submit --enabled true");
             Console.WriteLine("  grant --seconds 30");
             Console.WriteLine("  bluetooth-verified --seconds 30");
             Console.WriteLine("  status");

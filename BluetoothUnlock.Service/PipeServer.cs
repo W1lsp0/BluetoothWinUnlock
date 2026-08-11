@@ -96,6 +96,12 @@ namespace BluetoothUnlock.Service
                     return;
                 }
 
+                if (command == "CANUNLOCK")
+                {
+                    HandleCanUnlock(writer);
+                    return;
+                }
+
                 writer.Write("ERR unknown-command\nEND\n");
             }
         }
@@ -171,6 +177,7 @@ namespace BluetoothUnlock.Service
                 writer.Write("OK\n");
                 writer.Write("hasCredential:" + (config.HasCredential ? "1" : "0") + "\n");
                 writer.Write("mode:" + config.VerifierMode + "\n");
+                writer.Write("autoSubmit:" + (config.AutoSubmitOnVerified ? "1" : "0") + "\n");
                 writer.Write("verifiedUntilUtc:" + config.VerifiedUntilUtc.ToString("O") + "\n");
                 writer.Write("verifiedNow:" + (IsVerified(config) ? "1" : "0") + "\n");
                 writer.Write("END\n");
@@ -179,6 +186,27 @@ namespace BluetoothUnlock.Service
             {
                 Log("Status failed: " + ex);
                 writer.Write("ERR status-failed\nEND\n");
+            }
+        }
+
+        private static void HandleCanUnlock(StreamWriter writer)
+        {
+            try
+            {
+                var config = ConfigStore.Load();
+                if (config.HasCredential && config.AutoSubmitOnVerified && IsVerified(config))
+                {
+                    writer.Write("OK\nEND\n");
+                }
+                else
+                {
+                    writer.Write("ERR not-ready\nEND\n");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("CanUnlock failed: " + ex);
+                writer.Write("ERR canunlock-failed\nEND\n");
             }
         }
 

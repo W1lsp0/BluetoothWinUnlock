@@ -19,6 +19,7 @@ namespace BluetoothUnlock.Shared
         public string ProtectedPassword { get; set; } = "";
         public VerifierMode VerifierMode { get; set; } = VerifierMode.ManualTtl;
         public DateTime VerifiedUntilUtc { get; set; } = DateTime.MinValue;
+        public bool AutoSubmitOnVerified { get; set; } = false;
 
         [XmlIgnore]
         public bool HasCredential =>
@@ -94,6 +95,13 @@ namespace BluetoothUnlock.Shared
             config.Domain = string.IsNullOrWhiteSpace(domain) ? "." : domain;
             config.Username = username ?? "";
             config.ProtectedPassword = Protect(password ?? "");
+            Save(config);
+        }
+
+        public static void SetAutoSubmit(bool enabled)
+        {
+            var config = Load();
+            config.AutoSubmitOnVerified = enabled;
             Save(config);
         }
 
