@@ -34,10 +34,10 @@ jobs:
           $stage = Join-Path $env:RUNNER_TEMP "BluetoothWinUnlock"
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item -Recurse -Force scripts (Join-Path $stage "scripts")
-          Copy-Item -Force x64\Release\BluetoothUnlock.Provider.dll $stage
-          Copy-Item -Force BluetoothUnlock.Service\bin\Release\net48\BluetoothUnlock.Service.exe $stage
-          Copy-Item -Force BluetoothUnlock.Service\bin\Release\net48\BluetoothUnlock.Shared.dll $stage
-          Copy-Item -Force BluetoothUnlock.Config\bin\Release\net48\BluetoothUnlock.Config.exe $stage
+          Copy-Item -Force BluetoothUnlock.Provider\x64\Release\BluetoothUnlock.Provider.dll $stage
+          Copy-Item -Force "BluetoothUnlock.Service\bin\Any CPU\Release\net48\BluetoothUnlock.Service.exe" $stage
+          Copy-Item -Force "BluetoothUnlock.Service\bin\Any CPU\Release\net48\BluetoothUnlock.Shared.dll" $stage
+          Copy-Item -Force "BluetoothUnlock.Config\bin\Any CPU\Release\net48\BluetoothUnlock.Config.exe" $stage
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
