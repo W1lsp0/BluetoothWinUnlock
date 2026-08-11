@@ -19,8 +19,14 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Build
-        run: msbuild BluetoothUnlock.sln /restore /m /p:Configuration=Release /p:Platform=x64
+      - name: Build Provider
+        run: msbuild BluetoothUnlock.Provider\BluetoothUnlock.Provider.vcxproj /m /p:Configuration=Release /p:Platform=x64
+
+      - name: Build Service
+        run: msbuild BluetoothUnlock.Service\BluetoothUnlock.Service.csproj /restore /m /p:Configuration=Release /p:Platform="Any CPU"
+
+      - name: Build Config
+        run: msbuild BluetoothUnlock.Config\BluetoothUnlock.Config.csproj /restore /m /p:Configuration=Release /p:Platform="Any CPU"
 
       - name: Stage artifacts
         shell: pwsh
@@ -29,10 +35,9 @@ jobs:
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item -Recurse -Force scripts (Join-Path $stage "scripts")
           Copy-Item -Force x64\Release\BluetoothUnlock.Provider.dll $stage
-          Copy-Item -Force BluetoothUnlock.Service\bin\Release\BluetoothUnlock.Service.exe $stage
-          Copy-Item -Force BluetoothUnlock.Service\bin\Release\BluetoothUnlock.Shared.dll $stage
-          Copy-Item -Force BluetoothUnlock.Config\bin\Release\BluetoothUnlock.Config.exe $stage
-          Copy-Item -Force BluetoothUnlock.Config\bin\Release\BluetoothUnlock.Shared.dll (Join-Path $stage "BluetoothUnlock.Shared.Config.dll")
+          Copy-Item -Force BluetoothUnlock.Service\bin\Release\net48\BluetoothUnlock.Service.exe $stage
+          Copy-Item -Force BluetoothUnlock.Service\bin\Release\net48\BluetoothUnlock.Shared.dll $stage
+          Copy-Item -Force BluetoothUnlock.Config\bin\Release\net48\BluetoothUnlock.Config.exe $stage
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
