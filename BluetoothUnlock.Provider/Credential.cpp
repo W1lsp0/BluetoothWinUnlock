@@ -126,7 +126,12 @@ IFACEMETHODIMP BluetoothUnlockCredential::UnAdvise()
 
 IFACEMETHODIMP BluetoothUnlockCredential::SetSelected(BOOL *autoLogon)
 {
-    *autoLogon = FALSE;
+    if (!autoLogon)
+    {
+        return E_INVALIDARG;
+    }
+
+    *autoLogon = (_scenario == CPUS_UNLOCK_WORKSTATION && QueryAutoSubmitAllowed()) ? TRUE : FALSE;
     return S_OK;
 }
 
