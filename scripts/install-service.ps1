@@ -15,11 +15,29 @@ $targetDir = Join-Path $env:ProgramFiles "BluetoothUnlock"
 $versionDir = Join-Path $targetDir ("service-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
 $targetExe = Join-Path $versionDir "BluetoothUnlock.Service.exe"
 
+function Stop-BluetoothUnlockService {
+    $existing = Get-Service -Name "BluetoothUnlock" -ErrorAction SilentlyContinue
+    if (-not $existing) {
+        return
+    }
+
+    if ($existing.Status -ne "Stopped") {
+        Stop-Service -Name "BluetoothUnlock" -ErrorAction SilentlyContinue
+        try {
+            $existing.WaitForStatus("Stopped", "00:00:15")
+        }
+        catch {
+            Write-Warning "Timed out while waiting for BluetoothUnlock service to stop. Killing the service process."
+        }
+    }
+
+    Get-Process -Name "BluetoothUnlock.Service" -ErrorAction SilentlyContinue |
+        Stop-Process -Force -ErrorAction SilentlyContinue
+}
+
 $existing = Get-Service -Name "BluetoothUnlock" -ErrorAction SilentlyContinue
 if ($existing) {
-    Stop-Service -Name "BluetoothUnlock" -ErrorAction SilentlyContinue
-    $existing.WaitForStatus("Stopped", "00:00:15")
-    Get-Process -Name "BluetoothUnlock.Service" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Stop-BluetoothUnlockService
     sc.exe delete BluetoothUnlock | Out-Null
     Start-Sleep -Seconds 3
 }
