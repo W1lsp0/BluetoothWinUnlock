@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>BluetoothUnlock.ConfigUi</RootNamespace>
+    <AssemblyName>BluetoothUnlock.ConfigUi</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BluetoothUnlock.Shared\BluetoothUnlock.Shared.csproj" />
+  </ItemGroup>
+</Project>
+

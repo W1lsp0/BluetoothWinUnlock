@@ -47,6 +47,9 @@ jobs:
       - name: Build Config
         run: msbuild BluetoothUnlock.Config\BluetoothUnlock.Config.csproj /restore /m /p:Configuration=Release /p:Platform="Any CPU"
 
+      - name: Build Config UI
+        run: msbuild BluetoothUnlock.ConfigUi\BluetoothUnlock.ConfigUi.csproj /restore /m /p:Configuration=Release /p:Platform="Any CPU"
+
       - name: Stage artifacts
         shell: pwsh
         run: |
@@ -57,6 +60,7 @@ jobs:
           Copy-Item -Force "BluetoothUnlock.Service\bin\Any CPU\Release\net48\BluetoothUnlock.Service.exe" $stage
           Copy-Item -Force "BluetoothUnlock.Service\bin\Any CPU\Release\net48\BluetoothUnlock.Shared.dll" $stage
           Copy-Item -Force "BluetoothUnlock.Config\bin\Any CPU\Release\net48\BluetoothUnlock.Config.exe" $stage
+          Copy-Item -Force "BluetoothUnlock.ConfigUi\bin\Any CPU\Release\net48\BluetoothUnlock.ConfigUi.exe" $stage
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

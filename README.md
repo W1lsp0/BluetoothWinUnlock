@@ -5,6 +5,7 @@ BluetoothWinUnlock is the Windows unlock MVP for route A:
 - `BluetoothUnlock.Provider`: native C++ Credential Provider DLL.
 - `BluetoothUnlock.Service`: LocalSystem Windows service that owns verification and credential release.
 - `BluetoothUnlock.Config`: administrator CLI for storing the Windows credential and granting short test verification windows.
+- `BluetoothUnlock.ConfigUi`: desktop configuration UI for installation, credential storage, status, and test grants.
 - `BluetoothUnlock.Shared`: .NET Framework shared config and pipe protocol code.
 
 The Provider does not bypass Windows authentication. It asks the service for a verified credential, packages it as `KERB_INTERACTIVE_UNLOCK_LOGON`, and returns it to LogonUI/Winlogon.
@@ -54,6 +55,8 @@ Configure a test credential:
 ```
 
 Lock Windows, choose the `Bluetooth Unlock` tile, and submit within the grant window.
+
+You can also run `BluetoothUnlock.ConfigUi.exe` from the artifact as Administrator and use the buttons instead of the CLI commands.
 
 ## Safety Notes
 
