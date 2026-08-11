@@ -9,6 +9,7 @@ namespace BluetoothUnlock.Service
     {
         public void Run(CancellationToken cancellationToken)
         {
+            var startedUtc = DateTime.UtcNow;
             while (!cancellationToken.IsCancellationRequested)
             {
                 var delaySeconds = 10;
@@ -17,6 +18,10 @@ namespace BluetoothUnlock.Service
                 {
                     var config = ConfigStore.Load();
                     delaySeconds = config.BluetoothProbeIntervalSeconds;
+                    if (DateTime.UtcNow < startedUtc.AddMinutes(1))
+                    {
+                        delaySeconds = Math.Min(delaySeconds, 2);
+                    }
 
                     if (!config.BluetoothUnlockEnabled)
                     {

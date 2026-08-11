@@ -7,6 +7,11 @@
 
 namespace
 {
+    bool IsAutoSubmitScenario(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario)
+    {
+        return scenario == CPUS_UNLOCK_WORKSTATION || scenario == CPUS_LOGON;
+    }
+
     void NormalizeLocalDomain(std::wstring &domain)
     {
         if (!domain.empty() && domain != L".")
@@ -131,7 +136,7 @@ IFACEMETHODIMP BluetoothUnlockCredential::SetSelected(BOOL *autoLogon)
         return E_INVALIDARG;
     }
 
-    *autoLogon = (_scenario == CPUS_UNLOCK_WORKSTATION && QueryAutoSubmitAllowed()) ? TRUE : FALSE;
+    *autoLogon = (IsAutoSubmitScenario(_scenario) && QueryAutoSubmitAllowed()) ? TRUE : FALSE;
     return S_OK;
 }
 

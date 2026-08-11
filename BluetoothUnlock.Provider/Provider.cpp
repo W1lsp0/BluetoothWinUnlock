@@ -4,6 +4,14 @@
 #include "IpcClient.h"
 #include <new>
 
+namespace
+{
+    bool IsAutoSubmitScenario(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario)
+    {
+        return scenario == CPUS_UNLOCK_WORKSTATION || scenario == CPUS_LOGON;
+    }
+}
+
 BluetoothUnlockProvider::BluetoothUnlockProvider() :
     _refCount(1),
     _scenario(CPUS_INVALID),
@@ -139,7 +147,7 @@ IFACEMETHODIMP BluetoothUnlockProvider::GetCredentialCount(
     *count = SUCCEEDED(hr) ? 1 : 0;
     *defaultCredential = CREDENTIAL_PROVIDER_NO_DEFAULT;
     *autoLogonWithDefault = FALSE;
-    if (SUCCEEDED(hr) && _scenario == CPUS_UNLOCK_WORKSTATION && QueryAutoSubmitAllowed())
+    if (SUCCEEDED(hr) && IsAutoSubmitScenario(_scenario) && QueryAutoSubmitAllowed())
     {
         *defaultCredential = 0;
         *autoLogonWithDefault = TRUE;
@@ -217,7 +225,7 @@ HRESULT BluetoothUnlockProvider::EnsureCredential()
 
 void BluetoothUnlockProvider::StartAutoSubmitPolling()
 {
-    if (_pollThread || _scenario != CPUS_UNLOCK_WORKSTATION || !_events)
+    if (_pollThread || !IsAutoSubmitScenario(_scenario) || !_events)
     {
         return;
     }
@@ -263,12 +271,15 @@ void BluetoothUnlockProvider::StopAutoSubmitPolling()
 
 DWORD BluetoothUnlockProvider::AutoSubmitPollLoop()
 {
+    ULONGLONG lastReadyNotifyTick = 0;
     while (WaitForSingleObject(_stopPollEvent, 1000) == WAIT_TIMEOUT)
     {
         const bool ready = QueryAutoSubmitAllowed();
-        if (ready && !_lastAutoSubmitReady && _events)
+        const ULONGLONG now = GetTickCount64();
+        if (ready && _events && (!_lastAutoSubmitReady || now - lastReadyNotifyTick >= 3000))
         {
             _events->CredentialsChanged(_adviseContext);
+            lastReadyNotifyTick = now;
         }
         _lastAutoSubmitReady = ready;
     }
