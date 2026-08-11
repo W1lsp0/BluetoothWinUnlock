@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Provider
+        run: msbuild BluetoothUnlock.Provider\BluetoothUnlock.Provider.vcxproj /m /p:Configuration=Release /p:Platform=x64
+
+      - name: Verify Provider exports
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $dumpbin = Get-ChildItem -Path (Join-Path $vsPath "VC\Tools\MSVC") -Recurse -Filter dumpbin.exe |
+            Where-Object { $_.FullName -match "\\bin\\Hostx64\\x64\\dumpbin.exe$" } |
+            Select-Object -First 1
+          if (-not $dumpbin) {
+            throw "dumpbin.exe not found"
+          }
+          $exports = & $dumpbin.FullName /exports BluetoothUnlock.Provider\x64\Release\BluetoothUnlock.Provider.dll
+          $exports | Out-String | Write-Host
+          foreach ($name in "DllCanUnloadNow", "DllGetClassObject", "DllRegisterServer", "DllUnregisterServer") {
+            if (($exports | Select-String -SimpleMatch $name).Count -eq 0) {
+              throw "Missing export: $name"
+            }
+          }
+
+      - name: Build Service
+        run: msbuild BluetoothUnlock.Service\BluetoothUnlock.Service.csproj /restore /m /p:Configuration=Release /p:Platform="Any CPU"
+
+      - name: Build Config
+        run: msbuild BluetoothUnlock.Config\BluetoothUnlock.Config.csproj /restore /m /p:Configuration=Release /p:Platform="Any CPU"
+
+      - name: Build Config UI
+        run: msbuild BluetoothUnlock.ConfigUi\BluetoothUnlock.ConfigUi.csproj /restore /m /p:Configuration=Release /p:Platform="Any CPU"
+
+      - name: Package release zip
+        shell: pwsh
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP "BluetoothWinUnlock-Windows-x64-Release"
+          $zip = Join-Path $env:RUNNER_TEMP "BluetoothWinUnlock-Windows-x64-Release.zip"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item -Recurse -Force scripts (Join-Path $stage "scripts")
+          Copy-Item -Force BluetoothUnlock.Provider\x64\Release\BluetoothUnlock.Provider.dll $stage
+          Copy-Item -Force "BluetoothUnlock.Service\bin\Any CPU\Release\net48\BluetoothUnlock.Service.exe" $stage
+          Copy-Item -Force "BluetoothUnlock.Service\bin\Any CPU\Release\net48\BluetoothUnlock.Shared.dll" $stage
+          Copy-Item -Force "BluetoothUnlock.Config\bin\Any CPU\Release\net48\BluetoothUnlock.Config.exe" $stage
+          Copy-Item -Force "BluetoothUnlock.ConfigUi\bin\Any CPU\Release\net48\BluetoothUnlock.ConfigUi.exe" $stage
+          Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $zip -Force
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: BluetoothWinUnlock ${{ github.ref_name }}
+          generate_release_notes: true
+          files: ${{ runner.temp }}/BluetoothWinUnlock-Windows-x64-Release.zip
