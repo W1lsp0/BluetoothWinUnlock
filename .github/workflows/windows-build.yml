@@ -25,7 +25,15 @@ jobs:
       - name: Verify Provider exports
         shell: pwsh
         run: |
-          $exports = & dumpbin /exports BluetoothUnlock.Provider\x64\Release\BluetoothUnlock.Provider.dll
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $dumpbin = Get-ChildItem -Path (Join-Path $vsPath "VC\Tools\MSVC") -Recurse -Filter dumpbin.exe |
+            Where-Object { $_.FullName -match "\\bin\\Hostx64\\x64\\dumpbin.exe$" } |
+            Select-Object -First 1
+          if (-not $dumpbin) {
+            throw "dumpbin.exe not found"
+          }
+          $exports = & $dumpbin.FullName /exports BluetoothUnlock.Provider\x64\Release\BluetoothUnlock.Provider.dll
           $exports | Out-String | Write-Host
           foreach ($name in "DllCanUnloadNow", "DllGetClassObject", "DllRegisterServer", "DllUnregisterServer") {
             if (($exports | Select-String -SimpleMatch $name).Count -eq 0) {
