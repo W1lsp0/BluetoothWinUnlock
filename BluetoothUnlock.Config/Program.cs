@@ -29,6 +29,7 @@ namespace BluetoothUnlock.Config
                     case "set-mode":
                         return SetMode(options);
                     case "grant":
+                    case "bluetooth-verified":
                         return Grant(options);
                     case "status":
                         return Status();
@@ -189,6 +190,7 @@ namespace BluetoothUnlock.Config
             Console.WriteLine("  set-mode --mode ManualTtl");
             Console.WriteLine("  set-mode --mode AlwaysAllowTest");
             Console.WriteLine("  grant --seconds 30");
+            Console.WriteLine("  bluetooth-verified --seconds 30");
             Console.WriteLine("  status");
             Console.WriteLine("  clear");
         }
