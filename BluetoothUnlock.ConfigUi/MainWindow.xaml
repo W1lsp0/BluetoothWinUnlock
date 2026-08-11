@@ -163,7 +163,7 @@
                             <PasswordBox x:Name="PasswordBox" Style="{StaticResource PasswordFieldBox}" Margin="0,6,0,14" />
 
                             <CheckBox x:Name="AutoSubmitCheckBox"
-                                      Content="授权后自动提交 Bluetooth Unlock"
+                                      Content="上划进入登录界面后自动提交 Bluetooth Unlock"
                                       Margin="0,6,0,20" />
 
                             <Button Content="保存凭据"

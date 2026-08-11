@@ -59,7 +59,7 @@ Username: 你的 Windows 用户名
 Password: 你的 Windows 登录密码，不是 Windows Hello PIN
 ```
 
-6. 勾选“授权后自动提交 Bluetooth Unlock”。
+6. 勾选“上划进入登录界面后自动提交 Bluetooth Unlock”。
 7. 点击“保存凭据”。
 8. 在 Windows 设置中先完成蓝牙设备配对。
 9. 打开“蓝牙设备”页，点击“扫描蓝牙设备”。
@@ -116,7 +116,7 @@ Service pipe unavailable
 7. 选择手表或耳机，继续点击“添加”。
 8. 勾选“设备靠近时自动授权”。
 9. 点击“保存蓝牙设置”。
-10. 确认已经勾选“授权后自动提交 Bluetooth Unlock”，并点击“保存凭据”。
+10. 确认已经勾选“上划进入登录界面后自动提交 Bluetooth Unlock”，并点击“保存凭据”。
 11. 等待一个扫描周期后点击“刷新状态”。
 
 状态含义：
@@ -134,7 +134,7 @@ Service pipe unavailable
 rundll32.exe user32.dll,LockWorkStation
 ```
 
-如果设备已靠近且自动提交已开启，锁屏界面会尝试自动选择 `Bluetooth Unlock` 并解锁。
+如果设备已靠近且自动提交已开启，上划或按键进入登录界面后，Windows 会尝试自动选择 `Bluetooth Unlock` 并解锁；停留在时间锁屏界面时不会自动解锁。
 
 ## 命令行备用
 
@@ -208,15 +208,15 @@ bluetoothTrustedDeviceCount:...
 
 先确认“安装 Provider”没报错。如果仍然没有，重启 Windows。
 
-### 如何不点击 Bluetooth Unlock 自动解锁
+### 如何在上划后不点击 Bluetooth Unlock 自动解锁
 
 在 `BluetoothUnlock.ConfigUi.exe` 中勾选：
 
 ```text
-Auto submit Bluetooth Unlock when verified
+上划进入登录界面后自动提交 Bluetooth Unlock
 ```
 
-然后点击“保存凭据”。之后只要服务状态是 `verifiedNow:1`，Credential Provider 会请求 LogonUI 自动提交。不同 Windows 登录界面状态下，自动提交可能需要重新锁屏或等待 LogonUI 重新枚举凭据。
+然后点击“保存凭据”。之后只要服务状态是 `verifiedNow:1`，上划或按键进入登录界面时 Credential Provider 会作为默认凭据自动提交；停留在显示时间的锁屏界面时不会提交。不同 Windows 登录界面状态下，自动选择可能需要重新锁屏或等待 LogonUI 重新枚举凭据。
 
 ### 蓝牙扫描不到手机
 

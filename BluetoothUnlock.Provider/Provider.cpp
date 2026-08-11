@@ -150,7 +150,8 @@ IFACEMETHODIMP BluetoothUnlockProvider::GetCredentialCount(
     if (SUCCEEDED(hr) && IsAutoSubmitScenario(_scenario) && QueryAutoSubmitAllowed())
     {
         *defaultCredential = 0;
-        *autoLogonWithDefault = TRUE;
+        // Select this tile by default, but wait for LogonUI to select it after
+        // the user dismisses the lock screen before submitting the credential.
     }
     return S_OK;
 }
