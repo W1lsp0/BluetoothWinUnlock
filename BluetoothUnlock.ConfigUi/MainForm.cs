@@ -30,6 +30,7 @@ namespace BluetoothUnlock.ConfigUi
         private readonly CheckBox _autoSubmitCheckBox = new CheckBox();
         private readonly CheckBox _bluetoothEnabledCheckBox = new CheckBox();
         private readonly ComboBox _bluetoothDevicesComboBox = new ComboBox();
+        private readonly ListBox _trustedDevicesListBox = new ListBox();
         private readonly NumericUpDown _probeIntervalInput = new NumericUpDown();
         private readonly NumericUpDown _bluetoothGrantInput = new NumericUpDown();
         private readonly NumericUpDown _secondsInput = new NumericUpDown();
@@ -238,19 +239,21 @@ namespace BluetoothUnlock.ConfigUi
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                RowCount = 8,
+                RowCount = 10,
                 BackColor = CardBack,
             };
             grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 96));
             grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
-            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
-            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
-            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
-            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
             grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
             card.Controls.Add(grid);
 
             var title = new Label
@@ -266,50 +269,88 @@ namespace BluetoothUnlock.ConfigUi
             _bluetoothEnabledCheckBox.Text = "设备靠近时自动授权";
             _bluetoothEnabledCheckBox.AutoSize = true;
             _bluetoothEnabledCheckBox.ForeColor = TextPrimary;
-            _bluetoothEnabledCheckBox.Margin = new Padding(0, 8, 0, 0);
+            _bluetoothEnabledCheckBox.Margin = new Padding(0, 5, 0, 0);
             grid.Controls.Add(new Label(), 0, 1);
             grid.Controls.Add(_bluetoothEnabledCheckBox, 1, 1);
 
             _bluetoothDevicesComboBox.Dock = DockStyle.Fill;
             _bluetoothDevicesComboBox.DropDownStyle = ComboBoxStyle.DropDown;
             _bluetoothDevicesComboBox.Font = new Font("Segoe UI", 9.5F);
-            _bluetoothDevicesComboBox.Margin = new Padding(0, 6, 0, 4);
+            _bluetoothDevicesComboBox.Margin = new Padding(0, 4, 0, 4);
             AddLabeledInput(grid, "设备", _bluetoothDevicesComboBox, 2);
+
+            var deviceButtons = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                BackColor = CardBack,
+            };
+            deviceButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            deviceButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+
+            var scanButton = CreateButton("扫描", Color.FromArgb(71, 85, 105), Color.White);
+            scanButton.Dock = DockStyle.Fill;
+            scanButton.Click += (sender, args) => ScanBluetoothDevices();
+            deviceButtons.Controls.Add(scanButton, 0, 0);
+
+            var addButton = CreateButton("添加", Success, Color.White);
+            addButton.Dock = DockStyle.Fill;
+            addButton.Click += (sender, args) => AddSelectedBluetoothDevice();
+            deviceButtons.Controls.Add(addButton, 1, 0);
+            grid.Controls.Add(new Label(), 0, 3);
+            grid.Controls.Add(deviceButtons, 1, 3);
+
+            _trustedDevicesListBox.Dock = DockStyle.Fill;
+            _trustedDevicesListBox.BorderStyle = BorderStyle.FixedSingle;
+            _trustedDevicesListBox.Font = new Font("Segoe UI", 9F);
+            _trustedDevicesListBox.IntegralHeight = false;
+            AddLabeledInput(grid, "可信列表", _trustedDevicesListBox, 4);
 
             _probeIntervalInput.Minimum = 3;
             _probeIntervalInput.Maximum = 300;
             _probeIntervalInput.Value = 10;
             _probeIntervalInput.Dock = DockStyle.Left;
             _probeIntervalInput.Width = 84;
-            AddLabeledInput(grid, "扫描间隔", _probeIntervalInput, 3);
+            AddLabeledInput(grid, "扫描间隔", _probeIntervalInput, 5);
 
             _bluetoothGrantInput.Minimum = 5;
             _bluetoothGrantInput.Maximum = 300;
             _bluetoothGrantInput.Value = 30;
             _bluetoothGrantInput.Dock = DockStyle.Left;
             _bluetoothGrantInput.Width = 84;
-            AddLabeledInput(grid, "授权秒数", _bluetoothGrantInput, 4);
+            AddLabeledInput(grid, "授权秒数", _bluetoothGrantInput, 6);
 
-            var scanButton = CreateButton("扫描蓝牙设备", Color.FromArgb(71, 85, 105), Color.White);
-            scanButton.Dock = DockStyle.Fill;
-            scanButton.Click += (sender, args) => ScanBluetoothDevices();
-            grid.Controls.Add(new Label(), 0, 5);
-            grid.Controls.Add(scanButton, 1, 5);
+            var listButtons = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                BackColor = CardBack,
+            };
+            listButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            listButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+
+            var removeButton = CreateButton("移除", Danger, Color.White);
+            removeButton.Dock = DockStyle.Fill;
+            removeButton.Click += (sender, args) => RemoveSelectedBluetoothDevice();
+            listButtons.Controls.Add(removeButton, 0, 0);
 
             var saveButton = CreateButton("保存蓝牙设置", Primary, Color.White);
             saveButton.Dock = DockStyle.Fill;
             saveButton.Click += (sender, args) => SaveBluetoothSettings();
-            grid.Controls.Add(new Label(), 0, 6);
-            grid.Controls.Add(saveButton, 1, 6);
+            listButtons.Controls.Add(saveButton, 1, 0);
+            grid.Controls.Add(new Label(), 0, 7);
+            grid.Controls.Add(listButtons, 1, 7);
 
             var hint = new Label
             {
-                Text = "先在 Windows 设置里完成蓝牙配对，再扫描并选择设备。",
+                Text = "任意一个可信设备靠近时都会自动授权。",
                 Dock = DockStyle.Fill,
                 ForeColor = TextSecondary,
-                Padding = new Padding(0, 10, 0, 0),
+                Padding = new Padding(0, 8, 0, 0),
             };
-            grid.Controls.Add(hint, 0, 7);
+            grid.Controls.Add(hint, 0, 8);
             grid.SetColumnSpan(hint, 2);
 
             return card;
@@ -544,7 +585,7 @@ namespace BluetoothUnlock.ConfigUi
                 _bluetoothEnabledCheckBox.Checked = config.BluetoothUnlockEnabled;
                 _probeIntervalInput.Value = Clamp(config.BluetoothProbeIntervalSeconds, (int)_probeIntervalInput.Minimum, (int)_probeIntervalInput.Maximum);
                 _bluetoothGrantInput.Value = Clamp(config.BluetoothGrantSeconds, (int)_bluetoothGrantInput.Minimum, (int)_bluetoothGrantInput.Maximum);
-                LoadSavedBluetoothDevice(config);
+                LoadSavedBluetoothDevices(config);
             }
             catch (Exception ex)
             {
@@ -619,50 +660,73 @@ namespace BluetoothUnlock.ConfigUi
             }
         }
 
-        private void SaveBluetoothSettings()
+        private void AddSelectedBluetoothDevice()
         {
             try
             {
-                var address = "";
-                var name = "";
-
-                if (_bluetoothDevicesComboBox.SelectedItem is BluetoothDeviceInfo selectedDevice)
-                {
-                    address = selectedDevice.Address;
-                    name = selectedDevice.Name;
-                }
-                else
-                {
-                    var text = (_bluetoothDevicesComboBox.Text ?? "").Trim();
-                    if (LooksLikeBluetoothAddress(text))
-                    {
-                        address = text;
-                    }
-                    else
-                    {
-                        name = text;
-                    }
-                }
-
-                if (_bluetoothEnabledCheckBox.Checked &&
-                    string.IsNullOrWhiteSpace(address) &&
-                    string.IsNullOrWhiteSpace(name))
+                var device = GetSelectedBluetoothTrustedDevice();
+                if (device == null || !device.HasIdentity)
                 {
                     MessageBox.Show(this, "请先扫描并选择一个蓝牙设备。", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                ConfigStore.SetBluetooth(
+                if (ContainsTrustedDevice(device))
+                {
+                    AppendOutput("设备已在可信列表中: " + device);
+                    return;
+                }
+
+                _trustedDevicesListBox.Items.Add(device);
+                AppendOutput("已添加可信设备: " + device);
+            }
+            catch (Exception ex)
+            {
+                AppendOutput("添加蓝牙设备失败: " + ex.Message);
+            }
+        }
+
+        private void RemoveSelectedBluetoothDevice()
+        {
+            try
+            {
+                var index = _trustedDevicesListBox.SelectedIndex;
+                if (index < 0)
+                {
+                    MessageBox.Show(this, "请先在可信列表中选择要移除的设备。", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var item = _trustedDevicesListBox.Items[index];
+                _trustedDevicesListBox.Items.RemoveAt(index);
+                AppendOutput("已移除可信设备: " + item);
+            }
+            catch (Exception ex)
+            {
+                AppendOutput("移除蓝牙设备失败: " + ex.Message);
+            }
+        }
+
+        private void SaveBluetoothSettings()
+        {
+            try
+            {
+                var devices = GetTrustedDevices();
+
+                if (_bluetoothEnabledCheckBox.Checked && devices.Count == 0)
+                {
+                    MessageBox.Show(this, "请至少添加一个可信蓝牙设备。", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                ConfigStore.SetBluetoothDevices(
                     _bluetoothEnabledCheckBox.Checked,
-                    address,
-                    name,
+                    devices,
                     (int)_probeIntervalInput.Value,
                     (int)_bluetoothGrantInput.Value);
 
                 AppendOutput(
-                    "蓝牙设置已保存: " +
-                    (string.IsNullOrWhiteSpace(name) ? "" : name + " ") +
-                    BluetoothAddress.FormatWithSeparators(address));
+                    "蓝牙设置已保存。可信设备数量: " + devices.Count);
                 RefreshStatus();
             }
             catch (Exception ex)
@@ -704,6 +768,7 @@ namespace BluetoothUnlock.ConfigUi
                         ["autoSubmit"] = config.AutoSubmitOnVerified ? "1" : "0",
                         ["bluetoothEnabled"] = config.BluetoothUnlockEnabled ? "1" : "0",
                         ["bluetoothLastStatus"] = config.BluetoothLastStatus,
+                        ["bluetoothTrustedDeviceCount"] = config.BluetoothTrustedDevices == null ? "0" : config.BluetoothTrustedDevices.Count.ToString(),
                         ["verifiedNow"] = "0",
                     };
                     UpdateStatusBadges(values, false);
@@ -714,7 +779,8 @@ namespace BluetoothUnlock.ConfigUi
                         "模式: " + config.VerifierMode + "\r\n" +
                         "自动提交: " + config.AutoSubmitOnVerified + "\r\n" +
                         "蓝牙自动授权: " + config.BluetoothUnlockEnabled + "\r\n" +
-                        "蓝牙目标: " + config.BluetoothDeviceName + " " + BluetoothAddress.FormatWithSeparators(config.BluetoothDeviceAddress) + "\r\n" +
+                        "可信设备数量: " + (config.BluetoothTrustedDevices == null ? 0 : config.BluetoothTrustedDevices.Count) + "\r\n" +
+                        "最近命中: " + config.BluetoothLastMatchedDeviceName + " " + BluetoothAddress.FormatWithSeparators(config.BluetoothLastMatchedDeviceAddress) + "\r\n" +
                         "蓝牙状态: " + config.BluetoothLastStatus + "\r\n" +
                         "授权截止 UTC: " + config.VerifiedUntilUtc.ToString("O"));
                 }
@@ -738,13 +804,14 @@ namespace BluetoothUnlock.ConfigUi
 
             var bluetoothEnabled = values.TryGetValue("bluetoothEnabled", out var bluetoothEnabledValue) && bluetoothEnabledValue == "1";
             values.TryGetValue("bluetoothLastStatus", out var bluetoothStatus);
-            SetBluetoothStatusBadge(bluetoothEnabled, bluetoothStatus);
+            values.TryGetValue("bluetoothTrustedDeviceCount", out var trustedCount);
+            SetBluetoothStatusBadge(bluetoothEnabled, bluetoothStatus, trustedCount);
 
             var verified = values.TryGetValue("verifiedNow", out var verifiedValue) && verifiedValue == "1";
             SetStatusBadge(_verifiedStatusLabel, verified ? "可解锁" : "未授权", verified ? Success : Warning);
         }
 
-        private void SetBluetoothStatusBadge(bool enabled, string status)
+        private void SetBluetoothStatusBadge(bool enabled, string status, string trustedCount)
         {
             if (!enabled)
             {
@@ -758,7 +825,7 @@ namespace BluetoothUnlock.ConfigUi
                     SetStatusBadge(_bluetoothStatusLabel, "已靠近", Success);
                     break;
                 case "not-nearby":
-                    SetStatusBadge(_bluetoothStatusLabel, "未发现", Warning);
+                    SetStatusBadge(_bluetoothStatusLabel, "未发现/" + (string.IsNullOrWhiteSpace(trustedCount) ? "0" : trustedCount), Warning);
                     break;
                 case "no-target":
                     SetStatusBadge(_bluetoothStatusLabel, "未选择", Warning);
@@ -879,23 +946,90 @@ namespace BluetoothUnlock.ConfigUi
             }
         }
 
-        private void LoadSavedBluetoothDevice(UnlockConfig config)
+        private void LoadSavedBluetoothDevices(UnlockConfig config)
         {
-            if (string.IsNullOrWhiteSpace(config.BluetoothDeviceAddress) &&
-                string.IsNullOrWhiteSpace(config.BluetoothDeviceName))
+            _trustedDevicesListBox.Items.Clear();
+            if (config.BluetoothTrustedDevices == null || config.BluetoothTrustedDevices.Count == 0)
             {
                 return;
             }
 
-            var device = new BluetoothDeviceInfo
+            foreach (var device in config.BluetoothTrustedDevices)
             {
-                Address = config.BluetoothDeviceAddress,
-                Name = config.BluetoothDeviceName,
-                Remembered = true,
+                _trustedDevicesListBox.Items.Add(new BluetoothTrustedDevice
+                {
+                    Address = device.Address,
+                    Name = device.Name,
+                });
+            }
+        }
+
+        private BluetoothTrustedDevice GetSelectedBluetoothTrustedDevice()
+        {
+            if (_bluetoothDevicesComboBox.SelectedItem is BluetoothDeviceInfo selectedDevice)
+            {
+                return new BluetoothTrustedDevice
+                {
+                    Address = selectedDevice.Address,
+                    Name = selectedDevice.Name,
+                };
+            }
+
+            var text = (_bluetoothDevicesComboBox.Text ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return null;
+            }
+
+            if (LooksLikeBluetoothAddress(text))
+            {
+                return new BluetoothTrustedDevice
+                {
+                    Address = text,
+                    Name = "",
+                };
+            }
+
+            return new BluetoothTrustedDevice
+            {
+                Address = "",
+                Name = text,
             };
-            _bluetoothDevicesComboBox.Items.Add(device);
-            _bluetoothDevicesComboBox.SelectedItem = device;
-            _bluetoothDevicesComboBox.Text = device.ToString();
+        }
+
+        private List<BluetoothTrustedDevice> GetTrustedDevices()
+        {
+            var devices = new List<BluetoothTrustedDevice>();
+            foreach (var item in _trustedDevicesListBox.Items)
+            {
+                if (item is BluetoothTrustedDevice device)
+                {
+                    devices.Add(device);
+                }
+            }
+
+            return devices;
+        }
+
+        private bool ContainsTrustedDevice(BluetoothTrustedDevice device)
+        {
+            foreach (var existing in GetTrustedDevices())
+            {
+                if (!string.IsNullOrWhiteSpace(device.Address) &&
+                    string.Equals(BluetoothAddress.Normalize(existing.Address), BluetoothAddress.Normalize(device.Address), StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (string.IsNullOrWhiteSpace(device.Address) &&
+                    string.IsNullOrWhiteSpace(existing.Address) &&
+                    string.Equals(existing.Name, device.Name, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool LooksLikeBluetoothAddress(string text)

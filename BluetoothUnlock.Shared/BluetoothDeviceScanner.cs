@@ -63,9 +63,8 @@ namespace BluetoothUnlock.Shared
                 return null;
             }
 
-            var targetAddress = BluetoothAddress.Normalize(config.BluetoothDeviceAddress);
-            var targetName = (config.BluetoothDeviceName ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(targetAddress) && string.IsNullOrWhiteSpace(targetName))
+            var targets = config.BluetoothTrustedDevices ?? new List<BluetoothTrustedDevice>();
+            if (targets.Count == 0)
             {
                 return null;
             }
@@ -77,21 +76,42 @@ namespace BluetoothUnlock.Shared
                     continue;
                 }
 
-                if (!string.IsNullOrWhiteSpace(targetAddress) &&
-                    string.Equals(BluetoothAddress.Normalize(device.Address), targetAddress, StringComparison.OrdinalIgnoreCase))
-                {
-                    return device;
-                }
-
-                if (string.IsNullOrWhiteSpace(targetAddress) &&
-                    !string.IsNullOrWhiteSpace(targetName) &&
-                    string.Equals(device.Name, targetName, StringComparison.CurrentCultureIgnoreCase))
+                if (MatchesAnyTarget(device, targets))
                 {
                     return device;
                 }
             }
 
             return null;
+        }
+
+        private static bool MatchesAnyTarget(BluetoothDeviceInfo device, IEnumerable<BluetoothTrustedDevice> targets)
+        {
+            foreach (var target in targets)
+            {
+                if (target == null)
+                {
+                    continue;
+                }
+
+                var targetAddress = BluetoothAddress.Normalize(target.Address);
+                var targetName = (target.Name ?? "").Trim();
+
+                if (!string.IsNullOrWhiteSpace(targetAddress) &&
+                    string.Equals(BluetoothAddress.Normalize(device.Address), targetAddress, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (string.IsNullOrWhiteSpace(targetAddress) &&
+                    !string.IsNullOrWhiteSpace(targetName) &&
+                    string.Equals(device.Name, targetName, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public static bool IsNearby(BluetoothDeviceInfo device)

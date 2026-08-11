@@ -32,6 +32,10 @@ namespace BluetoothUnlock.Config
                         return SetAutoSubmit(options);
                     case "set-bluetooth":
                         return SetBluetooth(options);
+                    case "add-bluetooth":
+                        return AddBluetooth(options);
+                    case "remove-bluetooth":
+                        return RemoveBluetooth(options);
                     case "list-bluetooth":
                         return ListBluetooth(options);
                     case "grant":
@@ -123,11 +127,76 @@ namespace BluetoothUnlock.Config
                 Console.WriteLine("Mode: " + config.VerifierMode);
                 Console.WriteLine("Auto submit: " + config.AutoSubmitOnVerified);
                 Console.WriteLine("Bluetooth enabled: " + config.BluetoothUnlockEnabled);
-                Console.WriteLine("Bluetooth target: " + config.BluetoothDeviceName + " " + BluetoothAddress.FormatWithSeparators(config.BluetoothDeviceAddress));
+                Console.WriteLine("Bluetooth trusted devices: " + (config.BluetoothTrustedDevices == null ? 0 : config.BluetoothTrustedDevices.Count));
+                Console.WriteLine("Bluetooth first target: " + config.BluetoothDeviceName + " " + BluetoothAddress.FormatWithSeparators(config.BluetoothDeviceAddress));
                 Console.WriteLine("Bluetooth status: " + config.BluetoothLastStatus);
+                Console.WriteLine("Bluetooth matched: " + config.BluetoothLastMatchedDeviceName + " " + BluetoothAddress.FormatWithSeparators(config.BluetoothLastMatchedDeviceAddress));
                 Console.WriteLine("Verified until UTC: " + config.VerifiedUntilUtc.ToString("O"));
             }
 
+            return 0;
+        }
+
+        private static int AddBluetooth(Dictionary<string, string> options)
+        {
+            options.TryGetValue("address", out var address);
+            options.TryGetValue("name", out var name);
+            if (string.IsNullOrWhiteSpace(address) && string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Missing --address or --name.");
+            }
+
+            var config = ConfigStore.Load();
+            var devices = new List<BluetoothTrustedDevice>(config.BluetoothTrustedDevices ?? new List<BluetoothTrustedDevice>())
+            {
+                new BluetoothTrustedDevice
+                {
+                    Address = BluetoothAddress.Normalize(address),
+                    Name = name ?? "",
+                },
+            };
+
+            ConfigStore.SetBluetoothDevices(
+                true,
+                devices,
+                config.BluetoothProbeIntervalSeconds,
+                config.BluetoothGrantSeconds);
+            Console.WriteLine("Bluetooth device added.");
+            return 0;
+        }
+
+        private static int RemoveBluetooth(Dictionary<string, string> options)
+        {
+            options.TryGetValue("address", out var address);
+            options.TryGetValue("name", out var name);
+            var normalizedAddress = BluetoothAddress.Normalize(address);
+            var normalizedName = (name ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(normalizedAddress) && string.IsNullOrWhiteSpace(normalizedName))
+            {
+                throw new ArgumentException("Missing --address or --name.");
+            }
+
+            var config = ConfigStore.Load();
+            var devices = new List<BluetoothTrustedDevice>();
+            foreach (var device in config.BluetoothTrustedDevices ?? new List<BluetoothTrustedDevice>())
+            {
+                var addressMatches = !string.IsNullOrWhiteSpace(normalizedAddress) &&
+                    string.Equals(BluetoothAddress.Normalize(device.Address), normalizedAddress, StringComparison.OrdinalIgnoreCase);
+                var nameMatches = string.IsNullOrWhiteSpace(normalizedAddress) &&
+                    !string.IsNullOrWhiteSpace(normalizedName) &&
+                    string.Equals(device.Name, normalizedName, StringComparison.CurrentCultureIgnoreCase);
+                if (!addressMatches && !nameMatches)
+                {
+                    devices.Add(device);
+                }
+            }
+
+            ConfigStore.SetBluetoothDevices(
+                config.BluetoothUnlockEnabled,
+                devices,
+                config.BluetoothProbeIntervalSeconds,
+                config.BluetoothGrantSeconds);
+            Console.WriteLine("Bluetooth device removed.");
             return 0;
         }
 
@@ -272,6 +341,8 @@ namespace BluetoothUnlock.Config
             Console.WriteLine("  set-auto-submit --enabled true");
             Console.WriteLine("  list-bluetooth");
             Console.WriteLine("  set-bluetooth --enabled true --address AABBCCDDEEFF --name phone --probe-seconds 10 --grant-seconds 30");
+            Console.WriteLine("  add-bluetooth --address AABBCCDDEEFF --name phone");
+            Console.WriteLine("  remove-bluetooth --address AABBCCDDEEFF");
             Console.WriteLine("  grant --seconds 30");
             Console.WriteLine("  bluetooth-verified --seconds 30");
             Console.WriteLine("  status");

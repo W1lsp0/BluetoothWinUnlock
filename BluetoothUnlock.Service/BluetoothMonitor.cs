@@ -22,8 +22,8 @@ namespace BluetoothUnlock.Service
                     {
                         UpdateBluetoothStatus("disabled", false, null);
                     }
-                    else if (string.IsNullOrWhiteSpace(config.BluetoothDeviceAddress) &&
-                             string.IsNullOrWhiteSpace(config.BluetoothDeviceName))
+                    else if (config.BluetoothTrustedDevices == null ||
+                             config.BluetoothTrustedDevices.Count == 0)
                     {
                         UpdateBluetoothStatus("no-target", false, null);
                     }
@@ -41,6 +41,8 @@ namespace BluetoothUnlock.Service
                             {
                                 updated.BluetoothLastSeenUtc = DateTime.UtcNow;
                                 updated.BluetoothLastStatus = "nearby";
+                                updated.BluetoothLastMatchedDeviceAddress = device.Address;
+                                updated.BluetoothLastMatchedDeviceName = device.Name;
                                 updated.VerifiedUntilUtc = DateTime.UtcNow.AddSeconds(grantSeconds);
                             });
                             Log("Bluetooth target nearby: " + device.Name + " " + device.Address);

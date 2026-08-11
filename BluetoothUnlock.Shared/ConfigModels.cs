@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -23,15 +24,36 @@ namespace BluetoothUnlock.Shared
         public bool BluetoothUnlockEnabled { get; set; } = false;
         public string BluetoothDeviceAddress { get; set; } = "";
         public string BluetoothDeviceName { get; set; } = "";
+        public List<BluetoothTrustedDevice> BluetoothTrustedDevices { get; set; } = new List<BluetoothTrustedDevice>();
         public int BluetoothProbeIntervalSeconds { get; set; } = 10;
         public int BluetoothGrantSeconds { get; set; } = 30;
         public DateTime BluetoothLastSeenUtc { get; set; } = DateTime.MinValue;
         public string BluetoothLastStatus { get; set; } = "";
+        public string BluetoothLastMatchedDeviceAddress { get; set; } = "";
+        public string BluetoothLastMatchedDeviceName { get; set; } = "";
 
         [XmlIgnore]
         public bool HasCredential =>
             !string.IsNullOrWhiteSpace(Username) &&
             !string.IsNullOrWhiteSpace(ProtectedPassword);
+    }
+
+    public sealed class BluetoothTrustedDevice
+    {
+        public string Address { get; set; } = "";
+        public string Name { get; set; } = "";
+
+        [XmlIgnore]
+        public bool HasIdentity =>
+            !string.IsNullOrWhiteSpace(Address) ||
+            !string.IsNullOrWhiteSpace(Name);
+
+        public override string ToString()
+        {
+            var name = string.IsNullOrWhiteSpace(Name) ? "未命名设备" : Name;
+            var address = BluetoothAddress.FormatWithSeparators(Address);
+            return string.IsNullOrWhiteSpace(address) ? name : name + "  " + address;
+        }
     }
 
     public sealed class PlainCredential
@@ -141,6 +163,31 @@ namespace BluetoothUnlock.Shared
             config.BluetoothUnlockEnabled = enabled;
             config.BluetoothDeviceAddress = BluetoothAddress.Normalize(address);
             config.BluetoothDeviceName = name ?? "";
+            config.BluetoothTrustedDevices = new List<BluetoothTrustedDevice>
+            {
+                new BluetoothTrustedDevice
+                {
+                    Address = BluetoothAddress.Normalize(address),
+                    Name = name ?? "",
+                },
+            };
+            config.BluetoothProbeIntervalSeconds = Clamp(probeIntervalSeconds, 3, 300);
+            config.BluetoothGrantSeconds = Clamp(grantSeconds, 5, 300);
+            Save(config);
+        }
+
+        public static void SetBluetoothDevices(
+            bool enabled,
+            IEnumerable<BluetoothTrustedDevice> devices,
+            int probeIntervalSeconds,
+            int grantSeconds)
+        {
+            var config = Load();
+            config.BluetoothUnlockEnabled = enabled;
+            config.BluetoothTrustedDevices = NormalizeDevices(devices);
+            var first = config.BluetoothTrustedDevices.Count > 0 ? config.BluetoothTrustedDevices[0] : null;
+            config.BluetoothDeviceAddress = first == null ? "" : first.Address;
+            config.BluetoothDeviceName = first == null ? "" : first.Name;
             config.BluetoothProbeIntervalSeconds = Clamp(probeIntervalSeconds, 3, 300);
             config.BluetoothGrantSeconds = Clamp(grantSeconds, 5, 300);
             Save(config);
@@ -193,10 +240,71 @@ namespace BluetoothUnlock.Shared
             config.ProtectedPassword = config.ProtectedPassword ?? "";
             config.BluetoothDeviceAddress = BluetoothAddress.Normalize(config.BluetoothDeviceAddress);
             config.BluetoothDeviceName = config.BluetoothDeviceName ?? "";
+            config.BluetoothTrustedDevices = NormalizeDevices(config.BluetoothTrustedDevices);
+            if (config.BluetoothTrustedDevices.Count == 0 &&
+                (!string.IsNullOrWhiteSpace(config.BluetoothDeviceAddress) ||
+                 !string.IsNullOrWhiteSpace(config.BluetoothDeviceName)))
+            {
+                config.BluetoothTrustedDevices.Add(new BluetoothTrustedDevice
+                {
+                    Address = config.BluetoothDeviceAddress,
+                    Name = config.BluetoothDeviceName,
+                });
+            }
+
+            if (config.BluetoothTrustedDevices.Count > 0)
+            {
+                config.BluetoothDeviceAddress = config.BluetoothTrustedDevices[0].Address;
+                config.BluetoothDeviceName = config.BluetoothTrustedDevices[0].Name;
+            }
+
             config.BluetoothProbeIntervalSeconds = Clamp(config.BluetoothProbeIntervalSeconds, 3, 300);
             config.BluetoothGrantSeconds = Clamp(config.BluetoothGrantSeconds, 5, 300);
             config.BluetoothLastStatus = config.BluetoothLastStatus ?? "";
+            config.BluetoothLastMatchedDeviceAddress = BluetoothAddress.Normalize(config.BluetoothLastMatchedDeviceAddress);
+            config.BluetoothLastMatchedDeviceName = config.BluetoothLastMatchedDeviceName ?? "";
             return config;
+        }
+
+        private static List<BluetoothTrustedDevice> NormalizeDevices(IEnumerable<BluetoothTrustedDevice> devices)
+        {
+            var normalized = new List<BluetoothTrustedDevice>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (devices == null)
+            {
+                return normalized;
+            }
+
+            foreach (var device in devices)
+            {
+                if (device == null)
+                {
+                    continue;
+                }
+
+                var address = BluetoothAddress.Normalize(device.Address);
+                var name = device.Name ?? "";
+                if (string.IsNullOrWhiteSpace(address) && string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
+
+                var key = string.IsNullOrWhiteSpace(address)
+                    ? "name:" + name.Trim().ToUpperInvariant()
+                    : "addr:" + address;
+                if (!seen.Add(key))
+                {
+                    continue;
+                }
+
+                normalized.Add(new BluetoothTrustedDevice
+                {
+                    Address = address,
+                    Name = name,
+                });
+            }
+
+            return normalized;
         }
 
         private static int Clamp(int value, int min, int max)

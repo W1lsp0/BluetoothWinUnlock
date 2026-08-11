@@ -22,7 +22,7 @@ BluetoothWinUnlock 是一个 Windows 蓝牙解锁 MVP。它通过 Windows Creden
   -> Windows 完成解锁
 ```
 
-默认验证模式是 `ManualTtl`：服务只在短时间授权窗口内释放凭据。开启内置蓝牙自动授权后，服务会定时扫描你选择的蓝牙设备；设备当前连接或刚刚被扫描到时，服务自动续上授权窗口。
+默认验证模式是 `ManualTtl`：服务只在短时间授权窗口内释放凭据。开启内置蓝牙自动授权后，服务会定时扫描可信设备列表；手机、手表、耳机等任意一个可信设备当前连接或刚刚被扫描到时，服务自动续上授权窗口。
 
 ## 下载
 
@@ -63,11 +63,12 @@ Password: 你的 Windows 登录密码，不是 Windows Hello PIN
 7. 点击“保存凭据”。
 8. 在 Windows 设置中先完成蓝牙设备配对。
 9. 回到配置界面，点击“扫描蓝牙设备”。
-10. 在“蓝牙设备”区域选择目标设备。
-11. 勾选“设备靠近时自动授权”。
-12. 设置扫描间隔和授权秒数，默认可以先用 10 秒 / 30 秒。
-13. 点击“保存蓝牙设置”。
-14. 点击“刷新状态”。
+10. 在“蓝牙设备”区域选择设备，点击“添加”。
+11. 可以继续选择手机、手表、耳机等多个设备并逐个添加到“可信列表”。
+12. 勾选“设备靠近时自动授权”。
+13. 设置扫描间隔和授权秒数，默认可以先用 10 秒 / 30 秒。
+14. 点击“保存蓝牙设置”。
+15. 点击“刷新状态”。
 
 状态区正常应看到类似：
 
@@ -77,6 +78,7 @@ hasCredential:1
 mode:ManualTtl
 autoSubmit:1
 bluetoothEnabled:1
+bluetoothTrustedDeviceCount:3
 bluetoothLastStatus:not-nearby
 verifiedUntilUtc:...
 verifiedNow:0
@@ -110,17 +112,18 @@ Service pipe unavailable
 3. 添加设备并完成配对。
 4. 管理员运行 `BluetoothUnlock.ConfigUi.exe`。
 5. 点击“扫描蓝牙设备”。
-6. 选择你的设备。
-7. 勾选“设备靠近时自动授权”。
-8. 点击“保存蓝牙设置”。
-9. 确认已经勾选“授权后自动提交 Bluetooth Unlock”，并点击“保存凭据”。
-10. 等待一个扫描周期后点击“刷新状态”。
+6. 选择你的手机，点击“添加”。
+7. 选择手表或耳机，继续点击“添加”。
+8. 勾选“设备靠近时自动授权”。
+9. 点击“保存蓝牙设置”。
+10. 确认已经勾选“授权后自动提交 Bluetooth Unlock”，并点击“保存凭据”。
+11. 等待一个扫描周期后点击“刷新状态”。
 
 状态含义：
 
 ```text
-蓝牙: 已靠近     -> 设备命中，服务正在续授权窗口
-蓝牙: 未发现     -> 没扫描到当前设备
+蓝牙: 已靠近     -> 至少一个可信设备命中，服务正在续授权窗口
+蓝牙: 未发现/3   -> 3 个可信设备都没扫描到
 蓝牙: 等待扫描   -> 服务刚启动或还没完成第一次扫描
 授权窗口: 可解锁 -> Provider 可以释放凭据
 ```
@@ -147,6 +150,8 @@ cd D:\BluetoothWinUnlock-Windows-x64-Release
 .\BluetoothUnlock.Config.exe set-auto-submit --enabled true
 .\BluetoothUnlock.Config.exe list-bluetooth
 .\BluetoothUnlock.Config.exe set-bluetooth --enabled true --address AABBCCDDEEFF --name "我的手机" --probe-seconds 10 --grant-seconds 30
+.\BluetoothUnlock.Config.exe add-bluetooth --address 112233445566 --name "我的手表"
+.\BluetoothUnlock.Config.exe add-bluetooth --address 778899AABBCC --name "我的耳机"
 .\BluetoothUnlock.Config.exe status
 .\BluetoothUnlock.Config.exe grant --seconds 60
 ```
@@ -210,7 +215,7 @@ Auto submit Bluetooth Unlock when verified
 .\BluetoothUnlock.Config.exe list-bluetooth
 ```
 
-如果列表里 `nearby:0`，服务不会自动授权，这是为了避免只凭历史配对缓存误解锁。
+如果列表里 `nearby:0`，服务不会自动授权，这是为了避免只凭历史配对缓存误解锁。你可以添加多个可信设备，任意一个 `nearby:1` 都会触发授权。
 
 ### 密码填什么
 
@@ -220,5 +225,5 @@ Auto submit Bluetooth Unlock when verified
 
 - 不要在日常机器上启用 `AlwaysAllowTest`。
 - Windows 密码使用 DPAPI LocalMachine 保护后存储在 `%ProgramData%\BluetoothUnlock\config.xml`。
-- 当前蓝牙联动是短时间授权窗口，并且只接受“当前连接”或“刚刚扫描到”的设备，避免只凭历史配对缓存解锁。
+- 当前蓝牙联动是短时间授权窗口，并且只接受“当前连接”或“刚刚扫描到”的可信设备，避免只凭历史配对缓存解锁。
 - 更强安全性后续应升级为 challenge-response。
