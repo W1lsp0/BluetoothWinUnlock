@@ -6,7 +6,7 @@ BluetoothWinUnlock 是一个 Windows 蓝牙解锁 MVP。它通过 Windows Creden
 
 - `BluetoothUnlock.Provider`：C++ Credential Provider DLL，负责在锁屏界面显示 `Bluetooth Unlock`。
 - `BluetoothUnlock.Service`：LocalSystem Windows 服务，负责蓝牙监控、保存验证状态并向 Provider 释放凭据。
-- `BluetoothUnlock.ConfigUi`：桌面配置界面，用于安装、保存凭据、选择蓝牙设备、查看状态和测试授权。
+- `BluetoothUnlock.ConfigUi`：WPF 桌面配置界面，用于安装、保存凭据、管理可信蓝牙设备、查看状态和测试授权。
 - `BluetoothUnlock.Config`：命令行配置工具，适合排查或脚本化。
 - `BluetoothUnlock.Shared`：共享配置和 Named Pipe 协议代码。
 
@@ -49,9 +49,9 @@ scripts\
 
 1. 右键 `BluetoothUnlock.ConfigUi.exe`。
 2. 选择“以管理员身份运行”。
-3. 点击“安装服务”。
+3. 打开“安装维护”页，点击“安装服务”。
 4. 点击“安装 Provider”。
-5. 在“Windows 凭据”区域填写：
+5. 打开“凭据”页，填写：
 
 ```text
 Domain: .
@@ -62,13 +62,13 @@ Password: 你的 Windows 登录密码，不是 Windows Hello PIN
 6. 勾选“授权后自动提交 Bluetooth Unlock”。
 7. 点击“保存凭据”。
 8. 在 Windows 设置中先完成蓝牙设备配对。
-9. 回到配置界面，点击“扫描蓝牙设备”。
-10. 在“蓝牙设备”区域选择设备，点击“添加”。
+9. 打开“蓝牙设备”页，点击“扫描蓝牙设备”。
+10. 选择设备，点击“添加到可信列表”。
 11. 可以继续选择手机、手表、耳机等多个设备并逐个添加到“可信列表”。
 12. 勾选“设备靠近时自动授权”。
 13. 设置扫描间隔和授权秒数，默认可以先用 10 秒 / 30 秒。
 14. 点击“保存蓝牙设置”。
-15. 点击“刷新状态”。
+15. 回到“状态”页，点击“刷新状态”。
 
 状态区正常应看到类似：
 
@@ -95,7 +95,7 @@ Service pipe unavailable
 
 ## 测试解锁
 
-在 `BluetoothUnlock.ConfigUi.exe` 里：
+在 `BluetoothUnlock.ConfigUi.exe` 的“安装维护”页：
 
 1. 设置“授权秒数”，例如 `60`。
 2. 点击“测试授权”。
@@ -111,7 +111,7 @@ Service pipe unavailable
 2. 进入“蓝牙和设备”。
 3. 添加设备并完成配对。
 4. 管理员运行 `BluetoothUnlock.ConfigUi.exe`。
-5. 点击“扫描蓝牙设备”。
+5. 打开“蓝牙设备”页，点击“扫描蓝牙设备”。
 6. 选择你的手机，点击“添加”。
 7. 选择手表或耳机，继续点击“添加”。
 8. 勾选“设备靠近时自动授权”。
