@@ -38,12 +38,13 @@ namespace BluetoothUnlock.ConfigUi
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 5,
+                RowCount = 6,
                 Padding = new Padding(16),
             };
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 160));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 104));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             Controls.Add(root);
@@ -55,14 +56,14 @@ namespace BluetoothUnlock.ConfigUi
                 Font = new Font(Font.FontFamily, 18F, FontStyle.Bold),
                 Height = 38,
             };
-            root.Controls.Add(title);
+            root.Controls.Add(title, 0, 0);
 
             _adminLabel.AutoSize = true;
             _adminLabel.ForeColor = IsAdministrator() ? Color.SeaGreen : Color.Firebrick;
             _adminLabel.Text = IsAdministrator()
                 ? "Administrator: installation commands are available."
                 : "Not running as Administrator. Install/uninstall may fail.";
-            root.Controls.Add(_adminLabel);
+            root.Controls.Add(_adminLabel, 0, 1);
 
             var credentialGroup = new GroupBox
             {
@@ -71,7 +72,7 @@ namespace BluetoothUnlock.ConfigUi
                 Height = 150,
                 Padding = new Padding(12),
             };
-            root.Controls.Add(credentialGroup);
+            root.Controls.Add(credentialGroup, 0, 2);
 
             var credentialGrid = new TableLayoutPanel
             {
@@ -101,7 +102,7 @@ namespace BluetoothUnlock.ConfigUi
                 WrapContents = true,
                 Padding = new Padding(0, 8, 0, 8),
             };
-            root.Controls.Add(actionPanel);
+            root.Controls.Add(actionPanel, 0, 3);
 
             AddButton(actionPanel, "Install service", () => RunScript("install-service.ps1", "-ServiceExe .\\BluetoothUnlock.Service.exe"));
             AddButton(actionPanel, "Install provider", () => RunScript("install-provider.ps1", "-ProviderDll .\\BluetoothUnlock.Provider.dll"));
@@ -121,7 +122,16 @@ namespace BluetoothUnlock.ConfigUi
             _outputTextBox.ReadOnly = true;
             _outputTextBox.ScrollBars = ScrollBars.Vertical;
             _outputTextBox.Font = new Font("Consolas", 9F);
-            root.Controls.Add(_outputTextBox);
+            _outputTextBox.BackColor = Color.White;
+
+            var statusGroup = new GroupBox
+            {
+                Text = "Status / log",
+                Dock = DockStyle.Fill,
+                Padding = new Padding(8),
+            };
+            statusGroup.Controls.Add(_outputTextBox);
+            root.Controls.Add(statusGroup, 0, 4);
 
             var footer = new Label
             {
@@ -130,7 +140,7 @@ namespace BluetoothUnlock.ConfigUi
                 ForeColor = Color.DimGray,
                 Dock = DockStyle.Bottom,
             };
-            root.Controls.Add(footer);
+            root.Controls.Add(footer, 0, 5);
         }
 
         private static void AddLabeledControl(TableLayoutPanel grid, string label, Control control, int row)
@@ -311,4 +321,3 @@ namespace BluetoothUnlock.ConfigUi
         }
     }
 }
-
