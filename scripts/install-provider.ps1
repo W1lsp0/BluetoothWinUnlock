@@ -11,9 +11,10 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 
 $resolved = Resolve-Path $ProviderDll
 $targetDir = Join-Path $env:ProgramFiles "BluetoothUnlock"
-$targetDll = Join-Path $targetDir "BluetoothUnlock.Provider.dll"
+$versionDir = Join-Path $targetDir ("provider-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
+$targetDll = Join-Path $versionDir "BluetoothUnlock.Provider.dll"
 
-New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+New-Item -ItemType Directory -Force -Path $versionDir | Out-Null
 Copy-Item -Force $resolved $targetDll
 
 $regsvr = Start-Process -FilePath "$env:SystemRoot\System32\regsvr32.exe" -ArgumentList @("/s", "`"$targetDll`"") -Wait -PassThru

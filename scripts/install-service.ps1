@@ -12,19 +12,22 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 $resolved = Resolve-Path $ServiceExe
 $sourceDir = Split-Path -Parent $resolved
 $targetDir = Join-Path $env:ProgramFiles "BluetoothUnlock"
-$targetExe = Join-Path $targetDir "BluetoothUnlock.Service.exe"
-
-New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
-Copy-Item -Force $resolved $targetExe
-Get-ChildItem -Path $sourceDir -Filter "*.dll" | ForEach-Object {
-    Copy-Item -Force $_.FullName (Join-Path $targetDir $_.Name)
-}
+$versionDir = Join-Path $targetDir ("service-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
+$targetExe = Join-Path $versionDir "BluetoothUnlock.Service.exe"
 
 $existing = Get-Service -Name "BluetoothUnlock" -ErrorAction SilentlyContinue
 if ($existing) {
     Stop-Service -Name "BluetoothUnlock" -ErrorAction SilentlyContinue
+    $existing.WaitForStatus("Stopped", "00:00:15")
+    Get-Process -Name "BluetoothUnlock.Service" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     sc.exe delete BluetoothUnlock | Out-Null
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 3
+}
+
+New-Item -ItemType Directory -Force -Path $versionDir | Out-Null
+Copy-Item -Force $resolved $targetExe
+Get-ChildItem -Path $sourceDir -Filter "*.dll" | ForEach-Object {
+    Copy-Item -Force $_.FullName (Join-Path $versionDir $_.Name)
 }
 
 sc.exe create BluetoothUnlock binPath= "`"$targetExe`"" start= auto DisplayName= "Bluetooth Unlock Service" | Out-Null
@@ -33,5 +36,4 @@ Start-Service -Name "BluetoothUnlock"
 
 Write-Host "BluetoothUnlock service installed and started."
 Write-Host "Installed files:"
-Get-ChildItem $targetDir -Filter "BluetoothUnlock.Service.exe" | ForEach-Object { Write-Host "  $($_.FullName)" }
-Get-ChildItem $targetDir -Filter "*.dll" | ForEach-Object { Write-Host "  $($_.FullName)" }
+Get-ChildItem $versionDir | ForEach-Object { Write-Host "  $($_.FullName)" }
