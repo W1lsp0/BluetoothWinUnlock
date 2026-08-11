@@ -123,6 +123,7 @@ namespace BluetoothUnlock.Config
                 var config = ConfigStore.Load();
                 Console.WriteLine("Service pipe unavailable.");
                 Console.WriteLine("Config path: " + ConfigStore.ConfigPath);
+                Console.WriteLine("Protocol version: offline");
                 Console.WriteLine("Has credential: " + config.HasCredential);
                 Console.WriteLine("Mode: " + config.VerifierMode);
                 Console.WriteLine("Auto submit: " + config.AutoSubmitOnVerified);

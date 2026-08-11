@@ -175,6 +175,7 @@ namespace BluetoothUnlock.Service
             {
                 var config = ConfigStore.Load();
                 writer.Write("OK\n");
+                writer.Write("protocolVersion:" + PipeProtocol.ProtocolVersion + "\n");
                 writer.Write("hasCredential:" + (config.HasCredential ? "1" : "0") + "\n");
                 writer.Write("mode:" + config.VerifierMode + "\n");
                 writer.Write("autoSubmit:" + (config.AutoSubmitOnVerified ? "1" : "0") + "\n");

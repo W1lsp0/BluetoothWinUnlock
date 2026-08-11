@@ -193,6 +193,17 @@ C:\ProgramData\BluetoothUnlock\config.xml
 
 说明 UI/CLI 连不上 `\\.\pipe\BluetoothUnlock`。通常是服务没安装或没启动。先点 `Install service`，再点 `Refresh status`。
 
+### 保存了多个可信设备但仍然不授权
+
+如果“日志诊断”里的 `STATUS` 输出没有这些字段：
+
+```text
+protocolVersion:2
+bluetoothTrustedDeviceCount:...
+```
+
+说明当前正在运行的 Windows 服务还是旧版。请在新版 `BluetoothUnlock.ConfigUi.exe` 的“安装维护”页点击“安装服务”，然后再刷新状态。
+
 ### 锁屏界面没有 Bluetooth Unlock
 
 先确认“安装 Provider”没报错。如果仍然没有，重启 Windows。

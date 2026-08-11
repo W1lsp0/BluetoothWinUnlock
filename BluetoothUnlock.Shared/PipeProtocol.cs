@@ -5,6 +5,7 @@ namespace BluetoothUnlock.Shared
 {
     public static class PipeProtocol
     {
+        public const int ProtocolVersion = 2;
         public const string PipeName = "BluetoothUnlock";
         public const string PipePath = @"\\.\pipe\BluetoothUnlock";
 

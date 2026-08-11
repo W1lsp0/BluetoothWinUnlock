@@ -307,7 +307,21 @@ namespace BluetoothUnlock.ConfigUi
 
         private void UpdateStatus(Dictionary<string, string> values, bool serviceAvailable)
         {
-            SetStatus(ServiceStatusText, serviceAvailable ? "运行中" : "未连接", serviceAvailable ? _successBrush : _dangerBrush);
+            var serviceIsCurrent = !serviceAvailable ||
+                (values.TryGetValue("protocolVersion", out var protocolVersion) &&
+                 int.TryParse(protocolVersion, out var parsedProtocolVersion) &&
+                 parsedProtocolVersion >= PipeProtocol.ProtocolVersion);
+
+            if (serviceAvailable && !serviceIsCurrent)
+            {
+                SetStatus(ServiceStatusText, "版本过旧", _warningBrush);
+                SetStatus(BluetoothStatusText, "需重装服务", _warningBrush);
+                AppendOutput("当前运行的 BluetoothUnlock 服务版本过旧，请在“安装维护”页点击“安装服务”。");
+            }
+            else
+            {
+                SetStatus(ServiceStatusText, serviceAvailable ? "运行中" : "未连接", serviceAvailable ? _successBrush : _dangerBrush);
+            }
 
             var hasCredential = values.TryGetValue("hasCredential", out var credentialValue) && credentialValue == "1";
             SetStatus(CredentialStatusText, hasCredential ? "已保存" : "未保存", hasCredential ? _successBrush : _warningBrush);
@@ -318,7 +332,10 @@ namespace BluetoothUnlock.ConfigUi
             var bluetoothEnabled = values.TryGetValue("bluetoothEnabled", out var bluetoothEnabledValue) && bluetoothEnabledValue == "1";
             values.TryGetValue("bluetoothLastStatus", out var bluetoothStatus);
             values.TryGetValue("bluetoothTrustedDeviceCount", out var trustedCount);
-            SetBluetoothStatus(bluetoothEnabled, bluetoothStatus, trustedCount);
+            if (serviceIsCurrent)
+            {
+                SetBluetoothStatus(bluetoothEnabled, bluetoothStatus, trustedCount);
+            }
 
             var verified = values.TryGetValue("verifiedNow", out var verifiedValue) && verifiedValue == "1";
             SetStatus(VerifiedStatusText, verified ? "可解锁" : "未授权", verified ? _successBrush : _warningBrush);
@@ -328,10 +345,12 @@ namespace BluetoothUnlock.ConfigUi
             values.TryGetValue("verifiedUntilUtc", out var verifiedUntilUtc);
             SummaryText.Text =
                 "配置文件: " + ConfigStore.ConfigPath + "\n" +
+                "服务协议版本: " + (values.TryGetValue("protocolVersion", out var versionText) ? versionText : "旧版/未知") + "\n" +
                 "可信设备数量: " + (string.IsNullOrWhiteSpace(trustedCount) ? "0" : trustedCount) + "\n" +
                 "最近命中: " + FormatDeviceName(matchedName, matchedAddress) + "\n" +
                 "授权截止 UTC: " + (verifiedUntilUtc ?? "") + "\n" +
-                "锁屏 Provider: Bluetooth Unlock";
+                "锁屏 Provider: Bluetooth Unlock" +
+                (serviceIsCurrent ? "" : "\n\n当前服务版本过旧，请到“安装维护”页重新安装服务。");
         }
 
         private void SetBluetoothStatus(bool enabled, string status, string trustedCount)
