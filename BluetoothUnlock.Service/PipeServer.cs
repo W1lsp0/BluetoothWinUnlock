@@ -143,27 +143,43 @@ namespace BluetoothUnlock.Service
 
         private static void HandleGrant(StreamWriter writer, int seconds)
         {
-            if (seconds < 1 || seconds > 300)
+            try
             {
-                writer.Write("ERR invalid-grant-window\nEND\n");
-                return;
-            }
+                if (seconds < 1 || seconds > 300)
+                {
+                    writer.Write("ERR invalid-grant-window\nEND\n");
+                    return;
+                }
 
-            var config = ConfigStore.Load();
-            config.VerifiedUntilUtc = DateTime.UtcNow.AddSeconds(seconds);
-            ConfigStore.Save(config);
-            writer.Write("OK\nEND\n");
+                var config = ConfigStore.Load();
+                config.VerifiedUntilUtc = DateTime.UtcNow.AddSeconds(seconds);
+                ConfigStore.Save(config);
+                writer.Write("OK\nEND\n");
+            }
+            catch (Exception ex)
+            {
+                Log("Grant failed: " + ex);
+                writer.Write("ERR grant-failed\nEND\n");
+            }
         }
 
         private static void HandleStatus(StreamWriter writer)
         {
-            var config = ConfigStore.Load();
-            writer.Write("OK\n");
-            writer.Write("hasCredential:" + (config.HasCredential ? "1" : "0") + "\n");
-            writer.Write("mode:" + config.VerifierMode + "\n");
-            writer.Write("verifiedUntilUtc:" + config.VerifiedUntilUtc.ToString("O") + "\n");
-            writer.Write("verifiedNow:" + (IsVerified(config) ? "1" : "0") + "\n");
-            writer.Write("END\n");
+            try
+            {
+                var config = ConfigStore.Load();
+                writer.Write("OK\n");
+                writer.Write("hasCredential:" + (config.HasCredential ? "1" : "0") + "\n");
+                writer.Write("mode:" + config.VerifierMode + "\n");
+                writer.Write("verifiedUntilUtc:" + config.VerifiedUntilUtc.ToString("O") + "\n");
+                writer.Write("verifiedNow:" + (IsVerified(config) ? "1" : "0") + "\n");
+                writer.Write("END\n");
+            }
+            catch (Exception ex)
+            {
+                Log("Status failed: " + ex);
+                writer.Write("ERR status-failed\nEND\n");
+            }
         }
 
         private static bool IsVerified(UnlockConfig config)
