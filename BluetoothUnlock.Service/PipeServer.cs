@@ -128,6 +128,7 @@ namespace BluetoothUnlock.Service
 
             if (!IsVerified(config))
             {
+                RequestBluetoothProbeIfUseful(config);
                 writer.Write("ERR not-verified\nEND\n");
                 return;
             }
@@ -211,6 +212,7 @@ namespace BluetoothUnlock.Service
                 }
                 else
                 {
+                    RequestBluetoothProbeIfUseful(config);
                     writer.Write("ERR not-ready\nEND\n");
                 }
             }
@@ -229,6 +231,19 @@ namespace BluetoothUnlock.Service
             }
 
             return config.VerifiedUntilUtc > DateTime.UtcNow;
+        }
+
+        private static void RequestBluetoothProbeIfUseful(UnlockConfig config)
+        {
+            if (config == null ||
+                !config.BluetoothUnlockEnabled ||
+                config.BluetoothTrustedDevices == null ||
+                config.BluetoothTrustedDevices.Count == 0)
+            {
+                return;
+            }
+
+            BluetoothProbeCoordinator.RequestProbe();
         }
 
         private static void Log(string message)

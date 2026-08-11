@@ -60,7 +60,9 @@ namespace BluetoothUnlock.Service
                     UpdateBluetoothStatus("error: " + ex.Message, false, null);
                 }
 
-                if (cancellationToken.WaitHandle.WaitOne(TimeSpan.FromSeconds(delaySeconds)))
+                if (BluetoothProbeCoordinator.WaitForCancellationOrProbe(
+                    cancellationToken,
+                    TimeSpan.FromSeconds(delaySeconds)))
                 {
                     return;
                 }

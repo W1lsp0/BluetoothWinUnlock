@@ -140,7 +140,14 @@ ServiceCredential QueryServiceCredential()
     std::getline(lines, line);
     if (line != "OK")
     {
-        result.status = Utf8ToWide(std::vector<BYTE>(line.begin(), line.end()));
+        if (line == "ERR not-verified" || line == "ERR not-ready")
+        {
+            result.status = L"Waiting for trusted Bluetooth device.";
+        }
+        else
+        {
+            result.status = Utf8ToWide(std::vector<BYTE>(line.begin(), line.end()));
+        }
         return result;
     }
 
