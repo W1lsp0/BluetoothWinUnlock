@@ -20,7 +20,7 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Build
-        run: msbuild BluetoothUnlock.sln /m /p:Configuration=Release /p:Platform=x64
+        run: msbuild BluetoothUnlock.sln /restore /m /p:Configuration=Release /p:Platform=x64
 
       - name: Stage artifacts
         shell: pwsh
@@ -39,4 +39,3 @@ jobs:
         with:
           name: BluetoothWinUnlock-Windows-x64-Release
           path: ${{ runner.temp }}\BluetoothWinUnlock
-
