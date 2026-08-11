@@ -72,5 +72,13 @@
     <ClCompile Include="IpcClient.cpp" />
     <ClCompile Include="Provider.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="BluetoothUnlock.Provider.def" />
+  </ItemGroup>
+  <ItemDefinitionGroup>
+    <Link>
+      <ModuleDefinitionFile>BluetoothUnlock.Provider.def</ModuleDefinitionFile>
+    </Link>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

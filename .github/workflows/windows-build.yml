@@ -22,6 +22,17 @@ jobs:
       - name: Build Provider
         run: msbuild BluetoothUnlock.Provider\BluetoothUnlock.Provider.vcxproj /m /p:Configuration=Release /p:Platform=x64
 
+      - name: Verify Provider exports
+        shell: pwsh
+        run: |
+          $exports = & dumpbin /exports BluetoothUnlock.Provider\x64\Release\BluetoothUnlock.Provider.dll
+          $exports | Out-String | Write-Host
+          foreach ($name in "DllCanUnloadNow", "DllGetClassObject", "DllRegisterServer", "DllUnregisterServer") {
+            if (($exports | Select-String -SimpleMatch $name).Count -eq 0) {
+              throw "Missing export: $name"
+            }
+          }
+
       - name: Build Service
         run: msbuild BluetoothUnlock.Service\BluetoothUnlock.Service.csproj /restore /m /p:Configuration=Release /p:Platform="Any CPU"
 

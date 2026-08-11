@@ -26,7 +26,7 @@ if ($existing) {
 
 New-Item -ItemType Directory -Force -Path $versionDir | Out-Null
 Copy-Item -Force $resolved $targetExe
-Get-ChildItem -Path $sourceDir -Filter "*.dll" | ForEach-Object {
+Get-ChildItem -Path $sourceDir -Filter "BluetoothUnlock.Shared.dll" | ForEach-Object {
     Copy-Item -Force $_.FullName (Join-Path $versionDir $_.Name)
 }
 
