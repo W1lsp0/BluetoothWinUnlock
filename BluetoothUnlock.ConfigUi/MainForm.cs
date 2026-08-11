@@ -40,8 +40,8 @@ namespace BluetoothUnlock.ConfigUi
         {
             Text = "BluetoothWinUnlock";
             StartPosition = FormStartPosition.CenterScreen;
-            MinimumSize = new Size(820, 720);
-            Size = new Size(900, 760);
+            MinimumSize = new Size(880, 780);
+            Size = new Size(980, 840);
             BackColor = WindowBack;
             Font = new Font("Segoe UI", 9F);
             AutoScaleMode = AutoScaleMode.Dpi;
@@ -63,7 +63,7 @@ namespace BluetoothUnlock.ConfigUi
             };
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 88));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 220));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 300));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
             Controls.Add(root);
@@ -230,12 +230,13 @@ namespace BluetoothUnlock.ConfigUi
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                RowCount = 5,
+                RowCount = 6,
                 BackColor = CardBack,
             };
             panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
@@ -256,6 +257,7 @@ namespace BluetoothUnlock.ConfigUi
             AddActionButton(panel, "安装 Provider", () => RunScript("install-provider.ps1", "-ProviderDll .\\BluetoothUnlock.Provider.dll"), 1, 1, Primary);
             AddActionButton(panel, "刷新状态", RefreshStatus, 0, 2, Color.FromArgb(71, 85, 105));
             AddActionButton(panel, "卸载", () => RunScript("uninstall.ps1", ""), 1, 2, Danger);
+            AddActionButton(panel, "保存凭据", SaveCredential, 0, 3, Primary);
 
             var grantPanel = new FlowLayoutPanel
             {
@@ -278,13 +280,13 @@ namespace BluetoothUnlock.ConfigUi
                 Padding = new Padding(0, 7, 8, 0),
             });
             grantPanel.Controls.Add(_secondsInput);
-            panel.Controls.Add(grantPanel, 0, 3);
+            panel.Controls.Add(grantPanel, 0, 4);
 
             var grantButton = CreateButton("测试授权", Success, Color.White);
             grantButton.Dock = DockStyle.Fill;
             grantButton.Margin = new Padding(6, 4, 0, 6);
             grantButton.Click += (sender, args) => Grant();
-            panel.Controls.Add(grantButton, 1, 3);
+            panel.Controls.Add(grantButton, 1, 4);
 
             var hint = new Label
             {
@@ -293,7 +295,7 @@ namespace BluetoothUnlock.ConfigUi
                 ForeColor = TextSecondary,
                 Padding = new Padding(0, 10, 0, 0),
             };
-            panel.Controls.Add(hint, 0, 4);
+            panel.Controls.Add(hint, 0, 5);
             panel.SetColumnSpan(hint, 2);
 
             return card;
