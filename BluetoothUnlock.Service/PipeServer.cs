@@ -178,6 +178,13 @@ namespace BluetoothUnlock.Service
                 writer.Write("hasCredential:" + (config.HasCredential ? "1" : "0") + "\n");
                 writer.Write("mode:" + config.VerifierMode + "\n");
                 writer.Write("autoSubmit:" + (config.AutoSubmitOnVerified ? "1" : "0") + "\n");
+                writer.Write("bluetoothEnabled:" + (config.BluetoothUnlockEnabled ? "1" : "0") + "\n");
+                writer.Write("bluetoothDeviceName:" + config.BluetoothDeviceName + "\n");
+                writer.Write("bluetoothDeviceAddress:" + BluetoothAddress.FormatWithSeparators(config.BluetoothDeviceAddress) + "\n");
+                writer.Write("bluetoothProbeIntervalSeconds:" + config.BluetoothProbeIntervalSeconds + "\n");
+                writer.Write("bluetoothGrantSeconds:" + config.BluetoothGrantSeconds + "\n");
+                writer.Write("bluetoothLastSeenUtc:" + config.BluetoothLastSeenUtc.ToString("O") + "\n");
+                writer.Write("bluetoothLastStatus:" + config.BluetoothLastStatus + "\n");
                 writer.Write("verifiedUntilUtc:" + config.VerifiedUntilUtc.ToString("O") + "\n");
                 writer.Write("verifiedNow:" + (IsVerified(config) ? "1" : "0") + "\n");
                 writer.Write("END\n");

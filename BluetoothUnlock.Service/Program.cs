@@ -13,6 +13,7 @@ namespace BluetoothUnlock.Service
                 using (var cancellation = new CancellationTokenSource())
                 {
                     var server = new PipeServer();
+                    var bluetoothMonitor = new BluetoothMonitor();
                     Console.CancelKeyPress += (sender, e) =>
                     {
                         e.Cancel = true;
@@ -20,7 +21,13 @@ namespace BluetoothUnlock.Service
                     };
 
                     Console.WriteLine("BluetoothUnlock service console mode started.");
+                    var bluetoothTask = System.Threading.Tasks.Task.Factory.StartNew(
+                        () => bluetoothMonitor.Run(cancellation.Token),
+                        cancellation.Token,
+                        System.Threading.Tasks.TaskCreationOptions.LongRunning,
+                        System.Threading.Tasks.TaskScheduler.Default);
                     server.Run(cancellation.Token);
+                    bluetoothTask.Wait(3000);
                 }
                 return;
             }

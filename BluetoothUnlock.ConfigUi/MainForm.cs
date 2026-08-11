@@ -28,20 +28,25 @@ namespace BluetoothUnlock.ConfigUi
         private readonly TextBox _usernameTextBox = new TextBox();
         private readonly TextBox _passwordTextBox = new TextBox();
         private readonly CheckBox _autoSubmitCheckBox = new CheckBox();
+        private readonly CheckBox _bluetoothEnabledCheckBox = new CheckBox();
+        private readonly ComboBox _bluetoothDevicesComboBox = new ComboBox();
+        private readonly NumericUpDown _probeIntervalInput = new NumericUpDown();
+        private readonly NumericUpDown _bluetoothGrantInput = new NumericUpDown();
         private readonly NumericUpDown _secondsInput = new NumericUpDown();
         private readonly TextBox _outputTextBox = new TextBox();
         private readonly Label _adminLabel = new Label();
         private readonly Label _serviceStatusLabel = new Label();
         private readonly Label _credentialStatusLabel = new Label();
         private readonly Label _autoSubmitStatusLabel = new Label();
+        private readonly Label _bluetoothStatusLabel = new Label();
         private readonly Label _verifiedStatusLabel = new Label();
 
         public MainForm()
         {
             Text = "BluetoothWinUnlock";
             StartPosition = FormStartPosition.CenterScreen;
-            MinimumSize = new Size(880, 780);
-            Size = new Size(980, 840);
+            MinimumSize = new Size(1040, 820);
+            Size = new Size(1160, 900);
             BackColor = WindowBack;
             Font = new Font("Segoe UI", 9F);
             AutoScaleMode = AutoScaleMode.Dpi;
@@ -63,7 +68,7 @@ namespace BluetoothUnlock.ConfigUi
             };
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 88));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 300));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 340));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
             Controls.Add(root);
@@ -128,20 +133,21 @@ namespace BluetoothUnlock.ConfigUi
             var grid = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 4,
+                ColumnCount = 5,
                 RowCount = 1,
                 BackColor = WindowBack,
                 Padding = new Padding(0, 8, 0, 8),
             };
-            for (var i = 0; i < 4; i++)
+            for (var i = 0; i < 5; i++)
             {
-                grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+                grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
             }
 
             grid.Controls.Add(CreateStatusCard("服务", _serviceStatusLabel), 0, 0);
             grid.Controls.Add(CreateStatusCard("凭据", _credentialStatusLabel), 1, 0);
             grid.Controls.Add(CreateStatusCard("自动提交", _autoSubmitStatusLabel), 2, 0);
-            grid.Controls.Add(CreateStatusCard("授权窗口", _verifiedStatusLabel), 3, 0);
+            grid.Controls.Add(CreateStatusCard("蓝牙", _bluetoothStatusLabel), 3, 0);
+            grid.Controls.Add(CreateStatusCard("授权窗口", _verifiedStatusLabel), 4, 0);
             return grid;
         }
 
@@ -150,16 +156,18 @@ namespace BluetoothUnlock.ConfigUi
             var grid = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 2,
+                ColumnCount = 3,
                 RowCount = 1,
                 BackColor = WindowBack,
                 Padding = new Padding(0, 4, 0, 12),
             };
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 36));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
 
             grid.Controls.Add(BuildCredentialCard(), 0, 0);
-            grid.Controls.Add(BuildActionCard(), 1, 0);
+            grid.Controls.Add(BuildBluetoothCard(), 1, 0);
+            grid.Controls.Add(BuildActionCard(), 2, 0);
             return grid;
         }
 
@@ -221,6 +229,92 @@ namespace BluetoothUnlock.ConfigUi
             return card;
         }
 
+        private Control BuildBluetoothCard()
+        {
+            var card = CreateCard();
+            card.Padding = new Padding(18);
+
+            var grid = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 8,
+                BackColor = CardBack,
+            };
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 96));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            card.Controls.Add(grid);
+
+            var title = new Label
+            {
+                Text = "蓝牙设备",
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold),
+                ForeColor = TextPrimary,
+            };
+            grid.Controls.Add(title, 0, 0);
+            grid.SetColumnSpan(title, 2);
+
+            _bluetoothEnabledCheckBox.Text = "设备靠近时自动授权";
+            _bluetoothEnabledCheckBox.AutoSize = true;
+            _bluetoothEnabledCheckBox.ForeColor = TextPrimary;
+            _bluetoothEnabledCheckBox.Margin = new Padding(0, 8, 0, 0);
+            grid.Controls.Add(new Label(), 0, 1);
+            grid.Controls.Add(_bluetoothEnabledCheckBox, 1, 1);
+
+            _bluetoothDevicesComboBox.Dock = DockStyle.Fill;
+            _bluetoothDevicesComboBox.DropDownStyle = ComboBoxStyle.DropDown;
+            _bluetoothDevicesComboBox.Font = new Font("Segoe UI", 9.5F);
+            _bluetoothDevicesComboBox.Margin = new Padding(0, 6, 0, 4);
+            AddLabeledInput(grid, "设备", _bluetoothDevicesComboBox, 2);
+
+            _probeIntervalInput.Minimum = 3;
+            _probeIntervalInput.Maximum = 300;
+            _probeIntervalInput.Value = 10;
+            _probeIntervalInput.Dock = DockStyle.Left;
+            _probeIntervalInput.Width = 84;
+            AddLabeledInput(grid, "扫描间隔", _probeIntervalInput, 3);
+
+            _bluetoothGrantInput.Minimum = 5;
+            _bluetoothGrantInput.Maximum = 300;
+            _bluetoothGrantInput.Value = 30;
+            _bluetoothGrantInput.Dock = DockStyle.Left;
+            _bluetoothGrantInput.Width = 84;
+            AddLabeledInput(grid, "授权秒数", _bluetoothGrantInput, 4);
+
+            var scanButton = CreateButton("扫描蓝牙设备", Color.FromArgb(71, 85, 105), Color.White);
+            scanButton.Dock = DockStyle.Fill;
+            scanButton.Click += (sender, args) => ScanBluetoothDevices();
+            grid.Controls.Add(new Label(), 0, 5);
+            grid.Controls.Add(scanButton, 1, 5);
+
+            var saveButton = CreateButton("保存蓝牙设置", Primary, Color.White);
+            saveButton.Dock = DockStyle.Fill;
+            saveButton.Click += (sender, args) => SaveBluetoothSettings();
+            grid.Controls.Add(new Label(), 0, 6);
+            grid.Controls.Add(saveButton, 1, 6);
+
+            var hint = new Label
+            {
+                Text = "先在 Windows 设置里完成蓝牙配对，再扫描并选择设备。",
+                Dock = DockStyle.Fill,
+                ForeColor = TextSecondary,
+                Padding = new Padding(0, 10, 0, 0),
+            };
+            grid.Controls.Add(hint, 0, 7);
+            grid.SetColumnSpan(hint, 2);
+
+            return card;
+        }
+
         private Control BuildActionCard()
         {
             var card = CreateCard();
@@ -230,12 +324,13 @@ namespace BluetoothUnlock.ConfigUi
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                RowCount = 6,
+                RowCount = 7,
                 BackColor = CardBack,
             };
             panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
@@ -258,6 +353,7 @@ namespace BluetoothUnlock.ConfigUi
             AddActionButton(panel, "刷新状态", RefreshStatus, 0, 2, Color.FromArgb(71, 85, 105));
             AddActionButton(panel, "卸载", () => RunScript("uninstall.ps1", ""), 1, 2, Danger);
             AddActionButton(panel, "保存凭据", SaveCredential, 0, 3, Primary);
+            AddActionButton(panel, "保存蓝牙", SaveBluetoothSettings, 1, 3, Primary);
 
             var grantPanel = new FlowLayoutPanel
             {
@@ -288,14 +384,20 @@ namespace BluetoothUnlock.ConfigUi
             grantButton.Click += (sender, args) => Grant();
             panel.Controls.Add(grantButton, 1, 4);
 
+            var scanButton = CreateButton("扫描设备", Color.FromArgb(71, 85, 105), Color.White);
+            scanButton.Dock = DockStyle.Fill;
+            scanButton.Margin = new Padding(0, 4, 6, 6);
+            scanButton.Click += (sender, args) => ScanBluetoothDevices();
+            panel.Controls.Add(scanButton, 0, 5);
+
             var hint = new Label
             {
-                Text = "先安装服务和 Provider，再保存凭据。启用自动提交后，授权窗口内锁屏会自动提交解锁。",
+                Text = "安装完成后保存 Windows 凭据和蓝牙设置。蓝牙命中时服务会自动续上授权窗口。",
                 Dock = DockStyle.Fill,
                 ForeColor = TextSecondary,
                 Padding = new Padding(0, 10, 0, 0),
             };
-            panel.Controls.Add(hint, 0, 5);
+            panel.Controls.Add(hint, 0, 6);
             panel.SetColumnSpan(hint, 2);
 
             return card;
@@ -439,6 +541,10 @@ namespace BluetoothUnlock.ConfigUi
                 _domainTextBox.Text = string.IsNullOrWhiteSpace(config.Domain) ? "." : config.Domain;
                 _usernameTextBox.Text = config.Username ?? "";
                 _autoSubmitCheckBox.Checked = config.AutoSubmitOnVerified;
+                _bluetoothEnabledCheckBox.Checked = config.BluetoothUnlockEnabled;
+                _probeIntervalInput.Value = Clamp(config.BluetoothProbeIntervalSeconds, (int)_probeIntervalInput.Minimum, (int)_probeIntervalInput.Maximum);
+                _bluetoothGrantInput.Value = Clamp(config.BluetoothGrantSeconds, (int)_bluetoothGrantInput.Minimum, (int)_bluetoothGrantInput.Maximum);
+                LoadSavedBluetoothDevice(config);
             }
             catch (Exception ex)
             {
@@ -482,6 +588,89 @@ namespace BluetoothUnlock.ConfigUi
             }
         }
 
+        private void ScanBluetoothDevices()
+        {
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                AppendOutput("正在扫描蓝牙设备...");
+                var devices = BluetoothDeviceScanner.FindDevices(true);
+                _bluetoothDevicesComboBox.Items.Clear();
+
+                foreach (var device in devices)
+                {
+                    _bluetoothDevicesComboBox.Items.Add(device);
+                }
+
+                if (_bluetoothDevicesComboBox.Items.Count > 0)
+                {
+                    _bluetoothDevicesComboBox.SelectedIndex = 0;
+                }
+
+                AppendOutput("扫描完成，发现 " + devices.Count + " 个设备。");
+            }
+            catch (Exception ex)
+            {
+                AppendOutput("扫描蓝牙失败: " + ex.Message);
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+        }
+
+        private void SaveBluetoothSettings()
+        {
+            try
+            {
+                var address = "";
+                var name = "";
+
+                if (_bluetoothDevicesComboBox.SelectedItem is BluetoothDeviceInfo selectedDevice)
+                {
+                    address = selectedDevice.Address;
+                    name = selectedDevice.Name;
+                }
+                else
+                {
+                    var text = (_bluetoothDevicesComboBox.Text ?? "").Trim();
+                    if (LooksLikeBluetoothAddress(text))
+                    {
+                        address = text;
+                    }
+                    else
+                    {
+                        name = text;
+                    }
+                }
+
+                if (_bluetoothEnabledCheckBox.Checked &&
+                    string.IsNullOrWhiteSpace(address) &&
+                    string.IsNullOrWhiteSpace(name))
+                {
+                    MessageBox.Show(this, "请先扫描并选择一个蓝牙设备。", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                ConfigStore.SetBluetooth(
+                    _bluetoothEnabledCheckBox.Checked,
+                    address,
+                    name,
+                    (int)_probeIntervalInput.Value,
+                    (int)_bluetoothGrantInput.Value);
+
+                AppendOutput(
+                    "蓝牙设置已保存: " +
+                    (string.IsNullOrWhiteSpace(name) ? "" : name + " ") +
+                    BluetoothAddress.FormatWithSeparators(address));
+                RefreshStatus();
+            }
+            catch (Exception ex)
+            {
+                AppendOutput("保存蓝牙设置失败: " + ex.Message);
+            }
+        }
+
         private void Grant()
         {
             try
@@ -513,6 +702,8 @@ namespace BluetoothUnlock.ConfigUi
                         ["hasCredential"] = config.HasCredential ? "1" : "0",
                         ["mode"] = config.VerifierMode.ToString(),
                         ["autoSubmit"] = config.AutoSubmitOnVerified ? "1" : "0",
+                        ["bluetoothEnabled"] = config.BluetoothUnlockEnabled ? "1" : "0",
+                        ["bluetoothLastStatus"] = config.BluetoothLastStatus,
                         ["verifiedNow"] = "0",
                     };
                     UpdateStatusBadges(values, false);
@@ -522,6 +713,9 @@ namespace BluetoothUnlock.ConfigUi
                         "凭据已保存: " + config.HasCredential + "\r\n" +
                         "模式: " + config.VerifierMode + "\r\n" +
                         "自动提交: " + config.AutoSubmitOnVerified + "\r\n" +
+                        "蓝牙自动授权: " + config.BluetoothUnlockEnabled + "\r\n" +
+                        "蓝牙目标: " + config.BluetoothDeviceName + " " + BluetoothAddress.FormatWithSeparators(config.BluetoothDeviceAddress) + "\r\n" +
+                        "蓝牙状态: " + config.BluetoothLastStatus + "\r\n" +
                         "授权截止 UTC: " + config.VerifiedUntilUtc.ToString("O"));
                 }
                 catch
@@ -542,8 +736,40 @@ namespace BluetoothUnlock.ConfigUi
             var autoSubmit = values.TryGetValue("autoSubmit", out var autoSubmitValue) && autoSubmitValue == "1";
             SetStatusBadge(_autoSubmitStatusLabel, autoSubmit ? "已开启" : "手动", autoSubmit ? Success : TextSecondary);
 
+            var bluetoothEnabled = values.TryGetValue("bluetoothEnabled", out var bluetoothEnabledValue) && bluetoothEnabledValue == "1";
+            values.TryGetValue("bluetoothLastStatus", out var bluetoothStatus);
+            SetBluetoothStatusBadge(bluetoothEnabled, bluetoothStatus);
+
             var verified = values.TryGetValue("verifiedNow", out var verifiedValue) && verifiedValue == "1";
             SetStatusBadge(_verifiedStatusLabel, verified ? "可解锁" : "未授权", verified ? Success : Warning);
+        }
+
+        private void SetBluetoothStatusBadge(bool enabled, string status)
+        {
+            if (!enabled)
+            {
+                SetStatusBadge(_bluetoothStatusLabel, "未启用", TextSecondary);
+                return;
+            }
+
+            switch ((status ?? "").Trim().ToLowerInvariant())
+            {
+                case "nearby":
+                    SetStatusBadge(_bluetoothStatusLabel, "已靠近", Success);
+                    break;
+                case "not-nearby":
+                    SetStatusBadge(_bluetoothStatusLabel, "未发现", Warning);
+                    break;
+                case "no-target":
+                    SetStatusBadge(_bluetoothStatusLabel, "未选择", Warning);
+                    break;
+                case "":
+                    SetStatusBadge(_bluetoothStatusLabel, "等待扫描", TextSecondary);
+                    break;
+                default:
+                    SetStatusBadge(_bluetoothStatusLabel, status, Warning);
+                    break;
+            }
         }
 
         private static void SetStatusBadge(Label label, string text, Color color)
@@ -651,6 +877,45 @@ namespace BluetoothUnlock.ConfigUi
                 var principal = new WindowsPrincipal(identity);
                 return principal.IsInRole(WindowsBuiltInRole.Administrator);
             }
+        }
+
+        private void LoadSavedBluetoothDevice(UnlockConfig config)
+        {
+            if (string.IsNullOrWhiteSpace(config.BluetoothDeviceAddress) &&
+                string.IsNullOrWhiteSpace(config.BluetoothDeviceName))
+            {
+                return;
+            }
+
+            var device = new BluetoothDeviceInfo
+            {
+                Address = config.BluetoothDeviceAddress,
+                Name = config.BluetoothDeviceName,
+                Remembered = true,
+            };
+            _bluetoothDevicesComboBox.Items.Add(device);
+            _bluetoothDevicesComboBox.SelectedItem = device;
+            _bluetoothDevicesComboBox.Text = device.ToString();
+        }
+
+        private static bool LooksLikeBluetoothAddress(string text)
+        {
+            return BluetoothAddress.Normalize(text).Length == 12;
+        }
+
+        private static int Clamp(int value, int min, int max)
+        {
+            if (value < min)
+            {
+                return min;
+            }
+
+            if (value > max)
+            {
+                return max;
+            }
+
+            return value;
         }
     }
 }

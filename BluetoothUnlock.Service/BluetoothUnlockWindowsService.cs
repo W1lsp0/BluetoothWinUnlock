@@ -8,6 +8,7 @@ namespace BluetoothUnlock.Service
     {
         private CancellationTokenSource _cancellation;
         private Task _serverTask;
+        private Task _bluetoothTask;
 
         public BluetoothUnlockWindowsService()
         {
@@ -21,8 +22,14 @@ namespace BluetoothUnlock.Service
         {
             _cancellation = new CancellationTokenSource();
             var server = new PipeServer();
+            var bluetoothMonitor = new BluetoothMonitor();
             _serverTask = Task.Factory.StartNew(
                 () => server.Run(_cancellation.Token),
+                _cancellation.Token,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
+            _bluetoothTask = Task.Factory.StartNew(
+                () => bluetoothMonitor.Run(_cancellation.Token),
                 _cancellation.Token,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
@@ -32,9 +39,11 @@ namespace BluetoothUnlock.Service
         {
             _cancellation?.Cancel();
             _serverTask?.Wait(3000);
+            _bluetoothTask?.Wait(3000);
             _cancellation?.Dispose();
             _cancellation = null;
             _serverTask = null;
+            _bluetoothTask = null;
         }
     }
 }

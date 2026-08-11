@@ -30,6 +30,10 @@ namespace BluetoothUnlock.Config
                         return SetMode(options);
                     case "set-auto-submit":
                         return SetAutoSubmit(options);
+                    case "set-bluetooth":
+                        return SetBluetooth(options);
+                    case "list-bluetooth":
+                        return ListBluetooth(options);
                     case "grant":
                     case "bluetooth-verified":
                         return Grant(options);
@@ -117,7 +121,68 @@ namespace BluetoothUnlock.Config
                 Console.WriteLine("Config path: " + ConfigStore.ConfigPath);
                 Console.WriteLine("Has credential: " + config.HasCredential);
                 Console.WriteLine("Mode: " + config.VerifierMode);
+                Console.WriteLine("Auto submit: " + config.AutoSubmitOnVerified);
+                Console.WriteLine("Bluetooth enabled: " + config.BluetoothUnlockEnabled);
+                Console.WriteLine("Bluetooth target: " + config.BluetoothDeviceName + " " + BluetoothAddress.FormatWithSeparators(config.BluetoothDeviceAddress));
+                Console.WriteLine("Bluetooth status: " + config.BluetoothLastStatus);
                 Console.WriteLine("Verified until UTC: " + config.VerifiedUntilUtc.ToString("O"));
+            }
+
+            return 0;
+        }
+
+        private static int SetBluetooth(Dictionary<string, string> options)
+        {
+            var enabled = false;
+            if (options.TryGetValue("enabled", out var enabledText) && !bool.TryParse(enabledText, out enabled))
+            {
+                throw new ArgumentException("Invalid --enabled value. Use true or false.");
+            }
+
+            options.TryGetValue("address", out var address);
+            options.TryGetValue("name", out var name);
+
+            var probeSeconds = 10;
+            if (options.TryGetValue("probe-seconds", out var probeText) && !int.TryParse(probeText, out probeSeconds))
+            {
+                throw new ArgumentException("--probe-seconds must be an integer.");
+            }
+
+            var grantSeconds = 30;
+            if (options.TryGetValue("grant-seconds", out var grantText) && !int.TryParse(grantText, out grantSeconds))
+            {
+                throw new ArgumentException("--grant-seconds must be an integer.");
+            }
+
+            ConfigStore.SetBluetooth(enabled, address, name, probeSeconds, grantSeconds);
+            Console.WriteLine("Bluetooth unlock set to " + enabled + ".");
+            Console.WriteLine("Target: " + (name ?? "") + " " + BluetoothAddress.FormatWithSeparators(address));
+            Console.WriteLine("Probe seconds: " + probeSeconds);
+            Console.WriteLine("Grant seconds: " + grantSeconds);
+            return 0;
+        }
+
+        private static int ListBluetooth(Dictionary<string, string> options)
+        {
+            var inquiry = !options.TryGetValue("inquiry", out var value) || !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
+            var devices = BluetoothDeviceScanner.FindDevices(inquiry);
+
+            if (devices.Count == 0)
+            {
+                Console.WriteLine("No Bluetooth devices found.");
+                return 0;
+            }
+
+            foreach (var device in devices)
+            {
+                Console.WriteLine(
+                    BluetoothAddress.FormatWithSeparators(device.Address) +
+                    "\t" + device.Name +
+                    "\tconnected:" + (device.Connected ? "1" : "0") +
+                    "\tnearby:" + (BluetoothDeviceScanner.IsNearby(device) ? "1" : "0") +
+                    "\tremembered:" + (device.Remembered ? "1" : "0") +
+                    "\tauthenticated:" + (device.Authenticated ? "1" : "0") +
+                    "\tlastSeenUtc:" + device.LastSeenUtc.ToString("O"));
             }
 
             return 0;
@@ -205,6 +270,8 @@ namespace BluetoothUnlock.Config
             Console.WriteLine("  set-mode --mode ManualTtl");
             Console.WriteLine("  set-mode --mode AlwaysAllowTest");
             Console.WriteLine("  set-auto-submit --enabled true");
+            Console.WriteLine("  list-bluetooth");
+            Console.WriteLine("  set-bluetooth --enabled true --address AABBCCDDEEFF --name phone --probe-seconds 10 --grant-seconds 30");
             Console.WriteLine("  grant --seconds 30");
             Console.WriteLine("  bluetooth-verified --seconds 30");
             Console.WriteLine("  status");
