@@ -12,7 +12,8 @@ public:
 
     HRESULT Initialize(
         CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario,
-        ICredentialProviderUser *user);
+        ICredentialProviderUser *user,
+        HANDLE selectionEvent);
 
     IFACEMETHODIMP QueryInterface(REFIID riid, void **ppv) override;
     IFACEMETHODIMP_(ULONG) AddRef() override;
@@ -43,5 +44,6 @@ private:
     CREDENTIAL_PROVIDER_USAGE_SCENARIO _scenario;
     ICredentialProviderCredentialEvents *_events;
     PWSTR _userSid;
+    HANDLE _selectionEvent;
     PWSTR _fieldStrings[FID_NUM_FIELDS];
 };

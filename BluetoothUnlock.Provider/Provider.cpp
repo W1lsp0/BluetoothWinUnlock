@@ -21,6 +21,7 @@ BluetoothUnlockProvider::BluetoothUnlockProvider() :
     _adviseContext(0),
     _stopPollEvent(nullptr),
     _pollThread(nullptr),
+    _credentialSelectedEvent(CreateEventW(nullptr, TRUE, FALSE, nullptr)),
     _lastAutoSubmitReady(false)
 {
     DllAddRef();
@@ -32,6 +33,10 @@ BluetoothUnlockProvider::~BluetoothUnlockProvider()
     SafeRelease(&_events);
     SafeRelease(&_users);
     SafeRelease(&_credential);
+    if (_credentialSelectedEvent)
+    {
+        CloseHandle(_credentialSelectedEvent);
+    }
     DllRelease();
 }
 
@@ -81,6 +86,10 @@ IFACEMETHODIMP BluetoothUnlockProvider::SetUsageScenario(CREDENTIAL_PROVIDER_USA
     if (scenario == CPUS_UNLOCK_WORKSTATION || scenario == CPUS_LOGON)
     {
         _scenario = scenario;
+        if (_credentialSelectedEvent)
+        {
+            ResetEvent(_credentialSelectedEvent);
+        }
         SafeRelease(&_credential);
         return S_OK;
     }
@@ -117,6 +126,10 @@ IFACEMETHODIMP BluetoothUnlockProvider::UnAdvise()
 {
     StopAutoSubmitPolling();
     SafeRelease(&_events);
+    if (_credentialSelectedEvent)
+    {
+        ResetEvent(_credentialSelectedEvent);
+    }
     _adviseContext = 0;
     return S_OK;
 }
@@ -150,8 +163,12 @@ IFACEMETHODIMP BluetoothUnlockProvider::GetCredentialCount(
     if (SUCCEEDED(hr) && IsAutoSubmitScenario(_scenario) && QueryAutoSubmitAllowed())
     {
         *defaultCredential = 0;
-        // Select this tile by default, but wait for LogonUI to select it after
-        // the user dismisses the lock screen before submitting the credential.
+        if (_credentialSelectedEvent &&
+            WaitForSingleObject(_credentialSelectedEvent, 0) == WAIT_OBJECT_0)
+        {
+            *autoLogonWithDefault = TRUE;
+            ResetEvent(_credentialSelectedEvent);
+        }
     }
     return S_OK;
 }
@@ -210,7 +227,7 @@ HRESULT BluetoothUnlockProvider::EnsureCredential()
         return E_OUTOFMEMORY;
     }
 
-    HRESULT hr = credential->Initialize(_scenario, user);
+    HRESULT hr = credential->Initialize(_scenario, user, _credentialSelectedEvent);
     SafeRelease(&user);
     if (SUCCEEDED(hr))
     {
@@ -276,8 +293,11 @@ DWORD BluetoothUnlockProvider::AutoSubmitPollLoop()
     while (WaitForSingleObject(_stopPollEvent, 1000) == WAIT_TIMEOUT)
     {
         const bool ready = QueryAutoSubmitAllowed();
+        const bool selected = _credentialSelectedEvent &&
+            WaitForSingleObject(_credentialSelectedEvent, 0) == WAIT_OBJECT_0;
         const ULONGLONG now = GetTickCount64();
-        if (ready && _events && (!_lastAutoSubmitReady || now - lastReadyNotifyTick >= 3000))
+        if (ready && _events &&
+            (!_lastAutoSubmitReady || (selected && now - lastReadyNotifyTick >= 1000)))
         {
             _events->CredentialsChanged(_adviseContext);
             lastReadyNotifyTick = now;

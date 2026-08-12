@@ -7,11 +7,6 @@
 
 namespace
 {
-    bool IsAutoSubmitScenario(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario)
-    {
-        return scenario == CPUS_UNLOCK_WORKSTATION || scenario == CPUS_LOGON;
-    }
-
     void NormalizeLocalDomain(std::wstring &domain)
     {
         if (!domain.empty() && domain != L".")
@@ -32,7 +27,8 @@ BluetoothUnlockCredential::BluetoothUnlockCredential() :
     _refCount(1),
     _scenario(CPUS_INVALID),
     _events(nullptr),
-    _userSid(nullptr)
+    _userSid(nullptr),
+    _selectionEvent(nullptr)
 {
     ZeroMemory(_fieldStrings, sizeof(_fieldStrings));
     DllAddRef();
@@ -42,6 +38,10 @@ BluetoothUnlockCredential::~BluetoothUnlockCredential()
 {
     SafeRelease(&_events);
     CoTaskMemFree(_userSid);
+    if (_selectionEvent)
+    {
+        CloseHandle(_selectionEvent);
+    }
     for (auto &value : _fieldStrings)
     {
         CoTaskMemFree(value);
@@ -51,7 +51,8 @@ BluetoothUnlockCredential::~BluetoothUnlockCredential()
 
 HRESULT BluetoothUnlockCredential::Initialize(
     CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario,
-    ICredentialProviderUser *user)
+    ICredentialProviderUser *user,
+    HANDLE selectionEvent)
 {
     _scenario = scenario;
 
@@ -71,6 +72,17 @@ HRESULT BluetoothUnlockCredential::Initialize(
         {
             hr = S_OK;
         }
+    }
+    if (SUCCEEDED(hr) && selectionEvent && !DuplicateHandle(
+        GetCurrentProcess(),
+        selectionEvent,
+        GetCurrentProcess(),
+        &_selectionEvent,
+        0,
+        FALSE,
+        DUPLICATE_SAME_ACCESS))
+    {
+        hr = HRESULT_FROM_WIN32(GetLastError());
     }
 
     return hr;
@@ -136,12 +148,23 @@ IFACEMETHODIMP BluetoothUnlockCredential::SetSelected(BOOL *autoLogon)
         return E_INVALIDARG;
     }
 
-    *autoLogon = (IsAutoSubmitScenario(_scenario) && QueryAutoSubmitAllowed()) ? TRUE : FALSE;
+    if (_selectionEvent)
+    {
+        SetEvent(_selectionEvent);
+    }
+
+    // The provider performs the submission after the asynchronous Bluetooth
+    // check completes and LogonUI re-enumerates this selected credential.
+    *autoLogon = FALSE;
     return S_OK;
 }
 
 IFACEMETHODIMP BluetoothUnlockCredential::SetDeselected()
 {
+    if (_selectionEvent)
+    {
+        ResetEvent(_selectionEvent);
+    }
     return S_OK;
 }
 

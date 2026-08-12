@@ -41,5 +41,6 @@ private:
     UINT_PTR _adviseContext;
     HANDLE _stopPollEvent;
     HANDLE _pollThread;
+    HANDLE _credentialSelectedEvent;
     bool _lastAutoSubmitReady;
 };
